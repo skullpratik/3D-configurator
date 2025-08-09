@@ -8,17 +8,12 @@
     "build": "react-scripts build",
     "preview": "vite preview"
   },
-  "dependencies": {
-    "@emotion/react": "^11.10.5",
-    "@emotion/styled": "^11.10.5",
-    "@mui/material": "^5.11.8",
-    "@react-three/drei": "^9.122.0",
-    "@react-three/fiber": "^8.18.0",
-    "gsap": "^3.13.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "three": "^0.149.0"
-  },
+ "dependencies": {
+  "@babel/core": "^7.0.0",
+  "@types/three": ">=0.134.0",
+  "three": ">=0.159.0",
+  "react-scripts": "latest"
+},
   "devDependencies": {
     "@types/react": "^18.0.27",
     "@types/react-dom": "^18.0.10",
