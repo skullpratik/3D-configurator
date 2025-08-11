@@ -1,47 +1,61 @@
+import React, { useRef, useState } from "react";
+import { Interface } from "./components/Interface";
 import { Canvas } from "@react-three/fiber";
 import { Experience } from "./components/Experience";
-import { Interface } from "./components/Interface";
-import { Suspense, useRef } from "react";
-import * as THREE from "three";
 
-function App() {
+export default function App() {
   const experienceRef = useRef();
 
-  const handleDoorChange = (doorCount, position) => {
-    if (experienceRef.current && typeof experienceRef.current.setDoorSelection === "function") {
-      experienceRef.current.setDoorSelection(doorCount, position);
+  const [doorConfig, setDoorConfig] = useState({ count: null, position: null });
+  const [hdri, setHdri] = useState("photo_studio_01_4k.hdr");
+  const [materialProps, setMaterialProps] = useState({ metalness: 1, roughness: 0.4 });
+  const [lightSettings, setLightSettings] = useState({
+    directional: { color: "#ffffff", intensity: 1 },
+    ambient: { color: "#ffffff", intensity: 1 },
+  });
+
+  const handleDoorChange = (count, position) => {
+    setDoorConfig({ count, position });
+    if (experienceRef.current) {
+      experienceRef.current.setDoorSelection(count, position);
     }
   };
 
+  const handleHDRIChange = (file) => setHdri(file);
+
+  const handleMaterialChange = (prop, value) => {
+    setMaterialProps((prev) => ({ ...prev, [prop]: value }));
+  };
+
+  const handleLightChange = (type, value) => {
+    setLightSettings((prev) => ({ ...prev, [type]: value }));
+  };
+
   return (
-    <Interface onDoorChange={handleDoorChange}>
-      <Canvas
-        shadows
-        camera={{ position: [5, 5, 10], fov: 45 }}
-        gl={{
-          antialias: true,
-          toneMapping: THREE.ACESFilmicToneMapping,
-          outputColorSpace: THREE.SRGBColorSpace,
-        }}
-        onCreated={({ gl }) => {
-          gl.shadowMap.enabled = true;
-          gl.shadowMap.type = THREE.PCFSoftShadowMap;
-          gl.physicallyCorrectLights = true;
-        }}
-        style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          width: 'calc(100vw - 350px)',
-          height: '100vh'
-        }}
-      >
-        <Suspense fallback={null}>
-          <Experience ref={experienceRef} />
-        </Suspense>
-      </Canvas>
-    </Interface>
+    <div style={{ display: "flex", height: "100vh", width: "100vw" }}>
+      <div style={{ width: 350, flexShrink: 0 }}>
+        <Interface
+          onDoorChange={handleDoorChange}
+          onHDRIChange={handleHDRIChange}
+          onMaterialChange={handleMaterialChange}
+          onLightChange={handleLightChange}
+        />
+      </div>
+      <div style={{ flexGrow: 1, position: "relative" }}>
+        <Canvas
+          shadows
+          camera={{ position: [5, 5, 10], fov: 45 }}
+          style={{ width: "100%", height: "100%" }}
+        >
+          <Experience
+            ref={experienceRef}
+            lighting={hdri}
+            metalness={materialProps.metalness}
+            roughness={materialProps.roughness}
+            lightSettings={lightSettings}
+          />
+        </Canvas>
+      </div>
+    </div>
   );
 }
-
-export default App;
