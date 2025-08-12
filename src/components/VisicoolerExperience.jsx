@@ -21,7 +21,7 @@ useGLTF.preload("/models/Visilatest.glb");
 export const Experience = forwardRef(
   (
     {
-      lighting = "billiard_hall_4k.hdr",
+      lighting = "photo_studio_01_4k_11zon.hdr",
       metalness = 1,
       roughness = 0.4,
       lightSettings = {},

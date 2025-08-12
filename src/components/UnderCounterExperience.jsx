@@ -43,7 +43,7 @@ const positionConfigs = {
 
 useGLTF.preload("/models/08.glb");
 
-export const Experience = forwardRef(({ lighting = "photo_studio_01_4k.hdr", metalness = 1, roughness = 0.4, lightSettings = {} }, ref) => {
+export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr", metalness = 1, roughness = 0.4, lightSettings = {} }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
   const { scene } = useGLTF("/models/08.glb");
 
