@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect,Suspense } from "react";
 import { Box, Paper, Typography } from "@mui/material";
 import { Interface as UnderCounterInterface } from "./components/UnderCounterInterface";
 import { Interface as VisicoolerInterface } from "./components/VisicoolerInterface";
@@ -6,6 +6,7 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { Experience as UnderCounterExperience } from "./components/UnderCounterExperience";
 import { Experience as VisicoolerExperience } from "./components/VisicoolerExperience";
 import * as THREE from "three";
+import { Loader } from "./components/loading";
 
 // Helper component to get gl context and pass it to parent
 function GLProvider({ setGL }) {
@@ -232,10 +233,11 @@ export default function App() {
       <Box sx={{ flex: 1, position: "relative" }}>
         <Canvas
           shadows
-          camera={{ position: [-6, 0, 5], fov: 45 }}
+          camera={{ position: [-4, 2, 7], fov: 45 }}
           style={{ width: "100%", height: "100%" }}
           gl={{ preserveDrawingBuffer: true }} // important for toDataURL to work
-        >
+        > 
+          <Suspense fallback={<Loader />}>
           <GLProvider setGL={setGL} />
           <CanvasContent
             modelType={modelType}
@@ -247,6 +249,7 @@ export default function App() {
             handleLEDToggle={handleLEDToggle}
             doorType={doorType}
           />
+          </Suspense>
         </Canvas>
 
         <DownloadButton gl={gl} />
