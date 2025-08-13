@@ -214,7 +214,7 @@ export const Experience = forwardRef(
 
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.3, 0]} receiveShadow>
           <planeGeometry args={[1000, 1000]} />
-          <meshStandardMaterial color="#d8d8d8" roughness={5} metalness={0} />
+          <meshStandardMaterial color="#d8d8d8" roughness={0} metalness={0} visible={false}/>
         </mesh>
 
         <ContactShadows

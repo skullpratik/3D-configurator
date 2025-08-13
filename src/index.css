@@ -14,12 +14,12 @@ html {
 #root {
   width: 100vw;
   height: 100vh;
-  background-color: #d9afd9;
-  background-image: linear-gradient(0deg, #d9afd9 0%, #97d9e1 100%);
+  background-color:rgba(142, 140, 140, 0.15);;
+ 
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(243, 5, 5, 0.15);
   border-radius: 16px;
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);

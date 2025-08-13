@@ -63,6 +63,7 @@ function CanvasContent({
   underCounterRef,
   visiCoolerRef,
   handleLEDToggle,
+  doorType,
 }) {
   return modelType === "undercounter" ? (
     <UnderCounterExperience
@@ -71,6 +72,7 @@ function CanvasContent({
       metalness={materialProps.metalness}
       roughness={materialProps.roughness}
       lightSettings={lightSettings}
+      doorType={doorType}
     />
   ) : (
     <VisicoolerExperience
@@ -90,14 +92,6 @@ export default function App() {
 
   const [gl, setGL] = useState(null);
 
-
-
-
-
- 
-
-
-
   const [modelType, setModelType] = useState("undercounter");
   const [hdri, setHdri] = useState("photo_studio_01_4k.hdr");
   const [materialProps, setMaterialProps] = useState({
@@ -108,6 +102,9 @@ export default function App() {
     directional: { color: "#ffffff", intensity: 1 },
     ambient: { color: "#ffffff", intensity: 1 },
   });
+
+  // NEW: Door type state (solid | glass)
+  const [doorType, setDoorType] = useState("solid");
 
   const handleDoorChange = (count, position) => {
     const ref =
@@ -147,68 +144,67 @@ export default function App() {
         }}
       >
         <Box
-  sx={{
-    px: 3,
-    py: 2,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottom: "2px solid #f28315",  // stronger border color and thickness
-    background: "#fff",
-    boxShadow: "0 2px 6px rgba(0,0,0,0.1)", // subtle shadow for elevation
-    borderRadius: "12px 12px 0 0",  // rounded top corners
-  }}
->
-  <Typography
-    variant="h6"
-    sx={{
-      fontWeight: 700,
-      color: "#f28315",
-      userSelect: "none",
-      letterSpacing: 1,
-    }}
-  >
-    Cabinet Configurator
-  </Typography>
+          sx={{
+            px: 3,
+            py: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderBottom: "2px solid #f28315",
+            background: "#fff",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+            borderRadius: "12px 12px 0 0",
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 700,
+              color: "#f28315",
+              userSelect: "none",
+              letterSpacing: 1,
+            }}
+          >
+            Cabinet Configurator
+          </Typography>
 
-  <select
-  value={modelType}
-  onChange={(e) => setModelType(e.target.value)}
-  style={{
-    padding: "10px 20px",
-    borderRadius: "30px",
-    border: "2px solid #565350ff",
-    backgroundColor: "#fff",
-    color: "#e08f4cff",
-    fontWeight: 600,
-    fontSize: "1rem",
-    cursor: "pointer",
-    transition: "border-color 0.3s ease, box-shadow 0.3s ease",
-    outline: "none",
-    boxShadow: "0 4px 8px rgba(242, 131, 21, 0.25)",
-    minWidth: "160px",
-    appearance: "none",
-    WebkitAppearance: "none",
-    MozAppearance: "none",
-    backgroundImage: `url("data:image/svg+xml;utf8,<svg fill='%23f28315' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>")`,
-    backgroundRepeat: "no-repeat",
-    backgroundPosition: "right 12px center",
-    backgroundSize: "16px",
-  }}
-  onFocus={(e) => {
-    e.target.style.borderColor = "#d97603";
-    e.target.style.boxShadow = "0 0 10px #d97603";
-  }}
-  onBlur={(e) => {
-    e.target.style.borderColor = "#f28315";
-    e.target.style.boxShadow = "0 4px 8px rgba(242, 131, 21, 0.25)";
-  }}
->
-  <option value="undercounter">Undercounter</option>
-  <option value="visicooler">Visicooler</option>
-</select>
-</Box>
-
+          <select
+            value={modelType}
+            onChange={(e) => setModelType(e.target.value)}
+            style={{
+              padding: "10px 20px",
+              borderRadius: "30px",
+              border: "2px solid #565350ff",
+              backgroundColor: "#fff",
+              color: "#e08f4cff",
+              fontWeight: 600,
+              fontSize: "1rem",
+              cursor: "pointer",
+              transition: "border-color 0.3s ease, box-shadow 0.3s ease",
+              outline: "none",
+              boxShadow: "0 4px 8px rgba(242, 131, 21, 0.25)",
+              minWidth: "160px",
+              appearance: "none",
+              WebkitAppearance: "none",
+              MozAppearance: "none",
+              backgroundImage: `url("data:image/svg+xml;utf8,<svg fill='%23f28315' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>")`,
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "right 12px center",
+              backgroundSize: "16px",
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = "#d97603";
+              e.target.style.boxShadow = "0 0 10px #d97603";
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = "#f28315";
+              e.target.style.boxShadow = "0 4px 8px rgba(242, 131, 21, 0.25)";
+            }}
+          >
+            <option value="undercounter">Undercounter</option>
+            <option value="visicooler">Visicooler</option>
+          </select>
+        </Box>
 
         <Box sx={{ p: 3, height: "100%", overflowY: "auto" }}>
           {modelType === "undercounter" ? (
@@ -217,6 +213,9 @@ export default function App() {
               onHDRIChange={handleHDRIChange}
               onMaterialChange={handleMaterialChange}
               onLightChange={handleLightChange}
+              // NEW
+              onDoorTypeChange={setDoorType}
+              doorType={doorType}
             />
           ) : (
             <VisicoolerInterface
@@ -246,6 +245,7 @@ export default function App() {
             underCounterRef={underCounterRef}
             visiCoolerRef={visiCoolerRef}
             handleLEDToggle={handleLEDToggle}
+            doorType={doorType}
           />
         </Canvas>
 
