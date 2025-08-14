@@ -61,11 +61,11 @@ const positionConfigs = {
 };
 
 // Preload GLTF
-useGLTF.preload("/models/All3Models.glb");
+useGLTF.preload("/models/pra.glb");
 
 export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr", doorType = "solid" }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/All3Models.glb");
+  const { scene } = useGLTF("/models/pra.glb");
 
   const allObjects = useRef({});
   const activeDrawers = useRef([]);
