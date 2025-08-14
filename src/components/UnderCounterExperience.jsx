@@ -13,14 +13,11 @@ const TARGET_GROUPS = [
 const CLOSED_Z = -0.327;
 const OPEN_Z = 0;
 
-// Solid doors
+// Doors
 const SOLID_DOORS = ["Door_01", "Door_02", "Door_03"];
-// Glass doors
 const GLASS_DOORS = ["GlassDoor-01", "GlassDoor-02", "GlassDoor-03"];
-// All door names
 const ALL_DOORS = [...SOLID_DOORS, ...GLASS_DOORS];
 
-// Inside panels
 const PANELS = ["Door_Inside_Panel___01", "Door_Inside_Panel___02", "Door_Inside_Panel___03"];
 const GlassPanels=["GlassDoorHinges1", "GlassDoorHinges2", "GlassDoorHinges3"];
 
@@ -35,16 +32,8 @@ const doorConfig = {
 };
 
 // Mapping between solid and glass
-const toGlass = {
-  Door_01: "GlassDoor-01",
-  Door_02: "GlassDoor-02",
-  Door_03: "GlassDoor-03",
-};
-const toSolid = {
-  "GlassDoor-01": "Door_01",
-  "GlassDoor-02": "Door_02",
-  "GlassDoor-03": "Door_03",
-};
+const toGlass = { Door_01: "GlassDoor-01", Door_02: "GlassDoor-02", Door_03: "GlassDoor-03" };
+const toSolid = { "GlassDoor-01": "Door_01", "GlassDoor-02": "Door_02", "GlassDoor-03": "Door_03" };
 
 // Config for different positions
 const positionConfigs = {
@@ -74,12 +63,10 @@ const positionConfigs = {
 // Preload GLTF
 useGLTF.preload("/models/All3Models.glb");
 
-export const Experience = forwardRef(({ lighting = "photo_studio_01_4k.hdr", metalness = 1, roughness = 0.4, lightSettings = {}, doorType = "solid" }, ref) => {
+export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr", doorType = "solid" }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
   const { scene } = useGLTF("/models/All3Models.glb");
 
-  const raycaster = useRef(new THREE.Raycaster());
-  const mouse = useRef(new THREE.Vector2());
   const allObjects = useRef({});
   const activeDrawers = useRef([]);
   const activeDoors = useRef([]);
@@ -90,8 +77,6 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k.hdr", met
   const logo2InitialRot = useRef(new THREE.Euler());
   const lastSelectionRef = useRef({ doors: [], panels: [], drawers: [] });
   const initialRotations = useRef({});
-  const dirLightRef = useRef();
-  const ambientLightRef = useRef();
 
   const isGlassType = () => doorType === "glass";
   const mapDoorName = (name) => (isGlassType() ? (toGlass[name] || name) : name);
@@ -101,12 +86,10 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k.hdr", met
     activeDoors.current = ALL_DOORS.filter(n => allObjects.current[n]?.visible).map(n => allObjects.current[n]);
   };
 
-  // Logo2 visible ONLY when solid Door_03 is visible. Otherwise follow legacy logo rules with Logo.
   const updateLogoVisibility = () => {
     const door3Solid = allObjects.current["Door_03"];
     const drawer3 = allObjects.current["Drawer-03"];
     if (!logoRef.current || !logo2Ref.current) return;
-
     if (door3Solid?.visible) {
       logo2Ref.current.visible = true;
       logoRef.current.visible = false;
@@ -120,35 +103,38 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k.hdr", met
   };
 
   const resetToDefault = () => {
+    if (!scene) return;
     scene.traverse((child) => {
       if ([...SOLID_DOORS, ...GLASS_DOORS, ...PANELS].includes(child.name)) child.visible = false;
-      
-      if (TARGET_GROUPS.includes(child.name)) {
-        child.position.z = CLOSED_Z;
-        child.visible = true;
-        drawerStates.current[child.name] = "closed";
-      }
-      if (ALL_DOORS.includes(child.name)) {
-        child.rotation.copy(initialRotations.current[child.name]);
-        doorStates.current[child.name] = "closed";
-      }
+      if (TARGET_GROUPS.includes(child.name)) { child.position.z = CLOSED_Z; child.visible = true; drawerStates.current[child.name] = "closed"; }
+      if (GlassPanels.includes(child.name)) child.visible = false;
+      if (ALL_DOORS.includes(child.name)) { child.rotation.copy(initialRotations.current[child.name]); doorStates.current[child.name] = "closed"; }
     });
     if (logoRef.current) logoRef.current.position.set(0.522, 0.722, 0.39);
-    if (logo2Ref.current) logo2Ref.current.rotation.copy(logo2InitialRot.current);
-    if (logo2Ref.current) logo2Ref.current.visible = false;
+    if (logo2Ref.current) { logo2Ref.current.rotation.copy(logo2InitialRot.current); logo2Ref.current.visible = false; }
     updateActiveObjects();
     updateLogoVisibility();
     lastSelectionRef.current = { doors: [], panels: [], drawers: [] };
   };
 
+  // Initialize scene and objects
   useEffect(() => {
     if (!scene) return;
     threeScene.background = null;
     scene.scale.set(2, 2, 2);
     scene.position.set(0, -0.83, 0);
 
+
     scene.traverse((child) => {
-      
+      scene.traverse((child) => {
+    if (child.isMesh && child.material) {
+      // Update metalness and roughness
+      child.material.metalness = 1; // adjust value 0 to 1
+      child.material.roughness = 0.4; // adjust value 0 to 1
+      child.material.needsUpdate = true; // important to apply changes
+    }
+  });
+
       if (!child?.name) return;
       allObjects.current[child.name] = child;
 
@@ -157,188 +143,120 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k.hdr", met
         doorStates.current[child.name] = "closed";
         child.visible = false;
       }
-
       if (PANELS.includes(child.name)) child.visible = false;
+      if (GlassPanels.includes(child.name)) child.visible = false;
+      if (logoRef.current) logoRef.current.position.set(0.522, 0.722, 0.39);
 
-      if (child.name === "Logo" || child.name === "Logo.001") {
-        child.position.set(0.522, 0.722, 0.39);
-        logoRef.current = child;
-      }
+      if (child.name === "Logo" || child.name === "Logo.001") logoRef.current = child;
+      if (child.name === "Logo2") { logo2Ref.current = child; logo2InitialRot.current.copy(child.rotation); logo2Ref.current.visible = false; }
 
-      if (child.name === "Logo2") {
-        logo2Ref.current = child;
-        logo2InitialRot.current.copy(child.rotation);
-        logo2Ref.current.visible = false;
-      }
-
-      if (child.isMesh && child.material?.isMeshStandardMaterial) {
-        child.material.metalness = metalness;
-        child.material.roughness = roughness;
-        child.material.needsUpdate = true;
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-
-      if (TARGET_GROUPS.includes(child.name)) {
-        child.position.z = CLOSED_Z;
-        drawerStates.current[child.name] = "closed";
-      }
+      if (TARGET_GROUPS.includes(child.name)) { child.position.z = CLOSED_Z; drawerStates.current[child.name] = "closed"; }
     });
 
     updateActiveObjects();
     updateLogoVisibility();
-  }, [scene, threeScene, metalness, roughness]);
+  }, [scene, threeScene]);
 
   const handleClick = (event) => {
-    if (!scene) return;
-
+    if (!scene || !gl) return;
     const rect = gl.domElement.getBoundingClientRect();
-    mouse.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    const mouse = new THREE.Vector2(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
 
-    raycaster.current.setFromCamera(mouse.current, camera);
-
-    // 1️⃣ Doors
+    // Doors
     const visibleDoors = activeDoors.current.filter(obj => obj.visible);
-    if (visibleDoors.length > 0) {
-      const intersectsDoors = raycaster.current.intersectObjects(visibleDoors, true);
-      if (intersectsDoors.length > 0) {
-        let obj = intersectsDoors[0].object;
-        while (obj && !ALL_DOORS.includes(obj.name)) {
-          obj = obj.parent;
+    const intersectsDoors = raycaster.intersectObjects(visibleDoors, true);
+    if (intersectsDoors.length > 0) {
+      let obj = intersectsDoors[0].object;
+      while (obj && !ALL_DOORS.includes(obj.name)) obj = obj.parent;
+      if (obj) {
+        const name = obj.name;
+        const isOpen = doorStates.current[name] === "open";
+        const targetRotation = new THREE.Euler().copy(initialRotations.current[name]);
+        if (!isOpen) {
+          const config = doorConfig[name];
+          if (config) targetRotation[config.axis] += THREE.MathUtils.degToRad(config.angle);
         }
-        if (obj) {
-          const name = obj.name;
-          const isOpen = doorStates.current[name] === "open";
-          const targetRotation = new THREE.Euler().copy(initialRotations.current[name]);
-          if (!isOpen) {
-            const config = doorConfig[name];
-            if (config) targetRotation[config.axis] += THREE.MathUtils.degToRad(config.angle);
-          }
-          gsap.to(obj.rotation, {
-            x: targetRotation.x,
-            y: targetRotation.y,
-            z: targetRotation.z,
-            duration: 0.8,
-            ease: "power2.out"
-          });
+        gsap.to(obj.rotation, { x: targetRotation.x, y: targetRotation.y, z: targetRotation.z, duration: 0.8, ease: "power2.out" });
 
-          // ✅ Rotate Logo2 around Y when solid Door_03 is clicked
-          if (name === "Door_03" && logo2Ref.current) {
-            const targetY = isOpen
-              ? logo2InitialRot.current.y
-              : logo2InitialRot.current.y + THREE.MathUtils.degToRad(90);
-            gsap.to(logo2Ref.current.rotation, {
-              y: targetY,
-              duration: 0.8,
-              ease: "power2.out"
-            });
-          }
-
-          doorStates.current[name] = isOpen ? "closed" : "open";
-          updateLogoVisibility();
-          return; // stop drawers from triggering
+        // Rotate Logo2 for Door_03
+        if (name === "Door_03" && logo2Ref.current) {
+          const targetY = isOpen ? logo2InitialRot.current.y : logo2InitialRot.current.y + THREE.MathUtils.degToRad(90);
+          gsap.to(logo2Ref.current.rotation, { y: targetY, duration: 0.8, ease: "power2.out" });
         }
+
+        doorStates.current[name] = isOpen ? "closed" : "open";
+        updateLogoVisibility();
+        return;
       }
     }
 
-    // 2️⃣ Drawers
+    // Drawers
     const visibleDrawers = activeDrawers.current.filter(obj => obj.visible);
-    if (visibleDrawers.length > 0) {
-      const intersectsDrawers = raycaster.current.intersectObjects(visibleDrawers, true);
-      if (intersectsDrawers.length > 0) {
-        let obj = intersectsDrawers[0].object;
-        while (obj && !TARGET_GROUPS.includes(obj.name)) {
-          obj = obj.parent;
-        }
-        if (obj) {
-          const name = obj.name;
-          const isOpen = drawerStates.current[name] === "open";
-          gsap.to(obj.position, {
-            z: isOpen ? CLOSED_Z : OPEN_Z,
-            duration: 0.8,
-            ease: "power2.out"
-          });
+    const intersectsDrawers = raycaster.intersectObjects(visibleDrawers, true);
+    if (intersectsDrawers.length > 0) {
+      let obj = intersectsDrawers[0].object;
+      while (obj && !TARGET_GROUPS.includes(obj.name)) obj = obj.parent;
+      if (obj) {
+        const name = obj.name;
+        const isOpen = drawerStates.current[name] === "open";
+        gsap.to(obj.position, { z: isOpen ? CLOSED_Z : OPEN_Z, duration: 0.8, ease: "power2.out" });
 
-          // ✅ Slide Logo with Drawer-03 on Z
-          if (name === "Drawer-03" && logoRef.current) {
-            gsap.to(logoRef.current.position, {
-              z: isOpen ? 0.39 : 0.718,
-              duration: 0.8,
-              ease: "power2.out"
-            });
-          }
-
-          drawerStates.current[name] = isOpen ? "closed" : "open";
-          updateLogoVisibility(); // Update logos after drawer click
+        if (name === "Drawer-03" && logoRef.current) {
+          gsap.to(logoRef.current.position, { z: isOpen ? 0.39 : 0.718, duration: 0.8, ease: "power2.out" });
         }
+
+        drawerStates.current[name] = isOpen ? "closed" : "open";
+        updateLogoVisibility();
       }
     }
   };
 
   useEffect(() => {
-    if (!scene) return;
+    if (!gl) return;
     gl.domElement.addEventListener("click", handleClick);
     return () => gl.domElement.removeEventListener("click", handleClick);
-  }, [scene, gl, camera]);
+  }, [gl, camera]);
 
   const showSelectionWithDoorType = () => {
-    [...SOLID_DOORS, ...GLASS_DOORS].forEach(n => {
-      if (allObjects.current[n]) allObjects.current[n].visible = false;
-    });
-
-    lastSelectionRef.current.doors.forEach((solidName) => {
+    [...SOLID_DOORS, ...GLASS_DOORS].forEach(n => { if (allObjects.current[n]) allObjects.current[n].visible = false; });
+    lastSelectionRef.current.doors.forEach(solidName => {
       const mapped = mapDoorName(solidName);
       if (allObjects.current[mapped]) {
         allObjects.current[mapped].visible = true;
-        if (initialRotations.current[mapped]) {
-          allObjects.current[mapped].rotation.copy(initialRotations.current[mapped]);
-          doorStates.current[mapped] = "closed";
-        }
+        if (initialRotations.current[mapped]) allObjects.current[mapped].rotation.copy(initialRotations.current[mapped]);
+        doorStates.current[mapped] = "closed";
       }
     });
-
-    lastSelectionRef.current.panels.forEach(n => {
-      if (allObjects.current[n]) allObjects.current[n].visible = true;
-    });
-
+    lastSelectionRef.current.panels.forEach(n => { if (allObjects.current[n]) allObjects.current[n].visible = true; });
     updateActiveObjects();
     updateLogoVisibility();
   };
 
-  useEffect(() => {
-    showSelectionWithDoorType();
-  }, [doorType]);
+  useEffect(() => { showSelectionWithDoorType(); }, [doorType]);
 
   useImperativeHandle(ref, () => ({
     resetToDefault,
     setDoorSelection(doorCount, position) {
       resetToDefault();
-      if (!doorCount || !position) {
-        lastSelectionRef.current = { doors: [], panels: [], drawers: [] };
-        return;
-      }
+      if (!doorCount || !position) { lastSelectionRef.current = { doors: [], panels: [], drawers: [] }; return; }
       const config = positionConfigs[doorCount]?.[position];
       if (!config) return;
-
-      lastSelectionRef.current = {
-        doors: [...config.doors],
-        panels: [...config.panels],
-        drawers: [...config.hiddenDrawers],
-      };
-
+      lastSelectionRef.current = { doors: [...config.doors], panels: [...config.panels], drawers: [...config.hiddenDrawers] };
       showSelectionWithDoorType();
-      config.hiddenDrawers.forEach(n => {
-        if (allObjects.current[n]) allObjects.current[n].visible = false;
-      });
+      config.hiddenDrawers.forEach(n => { if (allObjects.current[n]) allObjects.current[n].visible = false; });
     }
   }));
 
   return (
     <Suspense fallback={null}>
       <Environment files={`/${lighting}`} background={false} intensity={1.2} />
-      <directionalLight ref={dirLightRef} position={[5, 5, 25]} />
-      <ambientLight ref={ambientLightRef} />
+      <directionalLight position={[5, 5, 25]} />
+      <ambientLight />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]} receiveShadow>
         <planeGeometry args={[1000, 1000]} />
         <meshStandardMaterial color="#d8d8d8" roughness={0} metalness={0} visible={false}/>
