@@ -122,7 +122,7 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
     if (!scene) return;
     threeScene.background = null;
     scene.scale.set(2, 2, 2);
-    scene.position.set(0, -0.83, 0);
+    scene.position.set(0, -0.836, 0);
 
 
     scene.traverse((child) => {
@@ -255,13 +255,13 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
   return (
     <Suspense fallback={null}>
       <Environment files="photo_studio_01_4k.hdr" background={false} intensity={1.2} />
-      <directionalLight position={[5, 5, 25]} />
+      
       <ambientLight />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]} receiveShadow>
         <planeGeometry args={[1000, 1000]} />
         <meshStandardMaterial color="#d8d8d8" roughness={0} metalness={0} visible={false}/>
       </mesh>
-      <ContactShadows position={[0, -0.9, 0]} opacity={1} scale={15} blur={2.5} far={10} />
+      <ContactShadows position={[0, -0.95, 0]} opacity={1} scale={15} blur={2.5} far={10} />
       <OrbitControls
         enableDamping
         dampingFactor={0.12}

@@ -64,7 +64,8 @@ function CanvasContent({
   doorType,
   canopyColor,
   bottomBorderColor,
-  doorColor
+  doorColor,
+  topPanelColor
 }) {
   switch (modelType) {
     case "undercounter":
@@ -87,6 +88,8 @@ function CanvasContent({
           canopyColor={canopyColor}
           bottomBorderColor={bottomBorderColor}
           doorColor={doorColor}
+          topPanelColor={topPanelColor} // NEW
+          ledVisible={lightSettings.ledVisible} // Pass LED state
         />
       );
     case "deepfridge":
@@ -114,13 +117,14 @@ export default function App() {
   const [lightSettings, setLightSettings] = useState({
     directional: { color: "#ffffff", intensity: 1 },
     ambient: { color: "#ffffff", intensity: 1 },
+    ledVisible: false,
   });
   const [doorType, setDoorType] = useState("solid");
 
-  // New color states
   const [canopyColor, setCanopyColor] = useState(null);
   const [bottomBorderColor, setBottomBorderColor] = useState(null);
   const [doorColor, setDoorColor] = useState(null);
+  const [topPanelColor, setTopPanelColor] = useState(null); // NEW
 
   const handleDoorChange = (count, position) => {
     const ref =
@@ -136,11 +140,8 @@ export default function App() {
     setMaterialProps((prev) => ({ ...prev, [prop]: value }));
   };
 
-  const handleLightChange = (lightName) => {
-    setLightSettings((prev) => ({ ...prev, ledLight: lightName }));
-  };
-
   const handleLEDToggle = (visible) => {
+    setLightSettings(prev => ({ ...prev, ledVisible: visible }));
     if (visiCoolerRef.current?.toggleLEDLight1001) {
       visiCoolerRef.current.toggleLEDLight1001(visible);
     }
@@ -210,16 +211,13 @@ export default function App() {
             <UnderCounterInterface
               onDoorChange={handleDoorChange}
               onMaterialChange={handleMaterialChange}
-              onLightChange={handleLightChange}
+              onLightChange={() => {}}
               onDoorTypeChange={setDoorType}
               doorType={doorType}
             />
           )}
           {modelType === "visicooler" && (
             <VisicoolerInterface
-              onDoorChange={handleDoorChange}
-              onMaterialChange={handleMaterialChange}
-              onLightChange={handleLightChange}
               onLEDToggle={handleLEDToggle}
               onCanopyColorChange={setCanopyColor}
               canopyColor={canopyColor}
@@ -227,13 +225,15 @@ export default function App() {
               bottomBorderColor={bottomBorderColor}
               onDoorColorChange={setDoorColor}
               doorColor={doorColor}
+              onTopPanelColorChange={setTopPanelColor} // NEW
+              topPanelColor={topPanelColor}           // NEW
             />
           )}
           {modelType === "deepfridge" && (
             <DeepFridgeInterface
               onDoorChange={handleDoorChange}
               onMaterialChange={handleMaterialChange}
-              onLightChange={handleLightChange}
+              onLightChange={() => {}}
             />
           )}
         </Box>
@@ -255,6 +255,7 @@ export default function App() {
             canopyColor={canopyColor}
             bottomBorderColor={bottomBorderColor}
             doorColor={doorColor}
+            topPanelColor={topPanelColor} // NEW
           />
         </Canvas>
         <DownloadButton gl={gl} />

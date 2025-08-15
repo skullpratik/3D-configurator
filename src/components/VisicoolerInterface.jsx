@@ -8,7 +8,9 @@ export const Interface = ({
   onBottomBorderColorChange,
   bottomBorderColor,
   onDoorColorChange,
-  doorColor
+  doorColor,
+  onTopPanelColorChange,
+  topPanelColor
 }) => {
   const [ledVisible, setLedVisible] = useState(false);
 
@@ -17,7 +19,7 @@ export const Interface = ({
     { label: "Blue", value: "#0000ff" },
     { label: "Green", value: "#00ff00" },
     { label: "Orange", value: "#ffa500" },
-    { label: "black", value: "#000000" }
+    { label: "Black", value: "#000000" }
   ];
 
   const handleLED = (e) => {
@@ -30,6 +32,7 @@ export const Interface = ({
       case 'canopy': onCanopyColorChange?.(color); break;
       case 'bottom': onBottomBorderColorChange?.(color); break;
       case 'door': onDoorColorChange?.(color); break;
+      case 'toppanel': onTopPanelColorChange?.(color); break;
       default: break;
     }
   };
@@ -46,9 +49,7 @@ export const Interface = ({
         <Typography variant="subtitle2">Canopy Border Color</Typography>
         <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
           {colorOptions.map(c => (
-            <Box
-              key={c.label}
-              onClick={() => handleColorSelect(c.value,'canopy')}
+            <Box key={c.label} onClick={() => handleColorSelect(c.value,'canopy')}
               sx={{
                 width: 32, height: 32, borderRadius: "50%",
                 backgroundColor: c.value,
@@ -65,9 +66,7 @@ export const Interface = ({
         <Typography variant="subtitle2">Bottom Border Color</Typography>
         <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
           {colorOptions.map(c => (
-            <Box
-              key={c.label}
-              onClick={() => handleColorSelect(c.value,'bottom')}
+            <Box key={c.label} onClick={() => handleColorSelect(c.value,'bottom')}
               sx={{
                 width: 32, height: 32, borderRadius: "50%",
                 backgroundColor: c.value,
@@ -84,13 +83,28 @@ export const Interface = ({
         <Typography variant="subtitle2">Door Color</Typography>
         <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
           {colorOptions.map(c => (
-            <Box
-              key={c.label}
-              onClick={() => handleColorSelect(c.value,'door')}
+            <Box key={c.label} onClick={() => handleColorSelect(c.value,'door')}
+              sx={{
+                width: 32, height: 32, borderRadius: "50%",
+                backgroundColor: doorColor === c.value ? c.value : c.value,
+                border: doorColor === c.value ? "3px solid #333" : "1px solid #ccc",
+                cursor: "pointer"
+              }}
+            />
+          ))}
+        </Box>
+      </Box>
+
+      {/* Top Panel color */}
+      <Box>
+        <Typography variant="subtitle2">Top Panel Color</Typography>
+        <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+          {colorOptions.map(c => (
+            <Box key={c.label} onClick={() => handleColorSelect(c.value,'toppanel')}
               sx={{
                 width: 32, height: 32, borderRadius: "50%",
                 backgroundColor: c.value,
-                border: doorColor === c.value ? "3px solid #333" : "1px solid #ccc",
+                border: topPanelColor === c.value ? "3px solid #333" : "1px solid #ccc",
                 cursor: "pointer"
               }}
             />
