@@ -254,7 +254,7 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
 
   return (
     <Suspense fallback={null}>
-      <Environment files={`/${lighting}`} background={false} intensity={1.2} />
+      <Environment files="photo_studio_01_4k.hdr" background={false} intensity={1.2} />
       <directionalLight position={[5, 5, 25]} />
       <ambientLight />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]} receiveShadow>

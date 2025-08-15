@@ -1,25 +1,24 @@
-import React, { useRef, useState, useEffect,Suspense } from "react";
+import React, { useRef, useState } from "react";
 import { Box, Paper, Typography } from "@mui/material";
 import { Interface as UnderCounterInterface } from "./components/UnderCounterInterface";
 import { Interface as VisicoolerInterface } from "./components/VisicoolerInterface";
+import { Interface as DeepFridgeInterface } from "./components/DeepFridgeInterface";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Experience as UnderCounterExperience } from "./components/UnderCounterExperience";
 import { Experience as VisicoolerExperience } from "./components/VisicoolerExperience";
-import * as THREE from "three";
+import { Experience as DeepFridgeExperience } from "./components/DeepFridgeExperience";
 import { Loader } from "./components/loading";
 
-// Helper component to get gl context and pass it to parent
+// GL provider
 function GLProvider({ setGL }) {
   const { gl } = useThree();
-  useEffect(() => {
-    setGL(gl);
-  }, [gl, setGL]);
+  React.useEffect(() => setGL(gl), [gl, setGL]);
   return null;
 }
 
+// Download screenshot button
 function DownloadButton({ gl }) {
-  if (!gl) return null; // Wait for gl to be ready
-
+  if (!gl) return null;
   const handleDownload = () => {
     const dataURL = gl.domElement.toDataURL("image/png");
     const link = document.createElement("a");
@@ -29,7 +28,6 @@ function DownloadButton({ gl }) {
     link.click();
     link.remove();
   };
-
   return (
     <button
       onClick={handleDownload}
@@ -48,74 +46,91 @@ function DownloadButton({ gl }) {
         zIndex: 10000,
         boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
       }}
-      title="Download current view"
-      aria-label="Download current view"
     >
       &#8681; Download
     </button>
   );
 }
 
+// Canvas content
 function CanvasContent({
   modelType,
-  hdri,
   materialProps,
   lightSettings,
   underCounterRef,
   visiCoolerRef,
+  deepFridgeRef,
   handleLEDToggle,
   doorType,
+  canopyColor,
+  bottomBorderColor,
+  doorColor
 }) {
-  return modelType === "undercounter" ? (
-    <UnderCounterExperience
-      ref={underCounterRef}
-      lighting={hdri}
-      metalness={materialProps.metalness}
-      roughness={materialProps.roughness}
-      lightSettings={lightSettings}
-      doorType={doorType}
-    />
-  ) : (
-    <VisicoolerExperience
-      ref={visiCoolerRef}
-      lighting={hdri}
-      metalness={materialProps.metalness}
-      roughness={materialProps.roughness}
-      lightSettings={lightSettings}
-      onLEDToggle={handleLEDToggle}
-    />
-  );
+  switch (modelType) {
+    case "undercounter":
+      return (
+        <UnderCounterExperience
+          ref={underCounterRef}
+          metalness={materialProps.metalness}
+          roughness={materialProps.roughness}
+          lightSettings={lightSettings}
+          doorType={doorType}
+        />
+      );
+    case "visicooler":
+      return (
+        <VisicoolerExperience
+          ref={visiCoolerRef}
+          metalness={materialProps.metalness}
+          roughness={materialProps.roughness}
+          lightSettings={lightSettings}
+          canopyColor={canopyColor}
+          bottomBorderColor={bottomBorderColor}
+          doorColor={doorColor}
+        />
+      );
+    case "deepfridge":
+      return (
+        <DeepFridgeExperience
+          ref={deepFridgeRef}
+          metalness={materialProps.metalness}
+          roughness={materialProps.roughness}
+          lightSettings={lightSettings}
+        />
+      );
+    default:
+      return null;
+  }
 }
 
 export default function App() {
   const underCounterRef = useRef();
   const visiCoolerRef = useRef();
+  const deepFridgeRef = useRef();
 
   const [gl, setGL] = useState(null);
-
   const [modelType, setModelType] = useState("undercounter");
-  const [hdri, setHdri] = useState("photo_studio_01_4k.hdr");
-  const [materialProps, setMaterialProps] = useState({
-    metalness: 1,
-    roughness: 0.4,
-  });
+  const [materialProps, setMaterialProps] = useState({ metalness: 1, roughness: 0.4 });
   const [lightSettings, setLightSettings] = useState({
     directional: { color: "#ffffff", intensity: 1 },
     ambient: { color: "#ffffff", intensity: 1 },
   });
-
-  // NEW: Door type state (solid | glass)
   const [doorType, setDoorType] = useState("solid");
+
+  // New color states
+  const [canopyColor, setCanopyColor] = useState(null);
+  const [bottomBorderColor, setBottomBorderColor] = useState(null);
+  const [doorColor, setDoorColor] = useState(null);
 
   const handleDoorChange = (count, position) => {
     const ref =
-      modelType === "undercounter" ? underCounterRef.current : visiCoolerRef.current;
-    if (ref && ref.setDoorSelection) {
-      ref.setDoorSelection(count, position);
-    }
+      modelType === "undercounter"
+        ? underCounterRef.current
+        : modelType === "visicooler"
+        ? visiCoolerRef.current
+        : deepFridgeRef.current;
+    if (ref?.setDoorSelection) ref.setDoorSelection(count, position);
   };
-
-  const handleHDRIChange = (file) => setHdri(file);
 
   const handleMaterialChange = (prop, value) => {
     setMaterialProps((prev) => ({ ...prev, [prop]: value }));
@@ -144,6 +159,7 @@ export default function App() {
           borderRight: "1px solid rgba(0,0,0,0.08)",
         }}
       >
+        {/* Header */}
         <Box
           sx={{
             px: 3,
@@ -157,15 +173,7 @@ export default function App() {
             borderRadius: "12px 12px 0 0",
           }}
         >
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 700,
-              color: "#f28315",
-              userSelect: "none",
-              letterSpacing: 1,
-            }}
-          >
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "#f28315", userSelect: "none", letterSpacing: 1 }}>
             Cabinet Configurator
           </Typography>
 
@@ -181,77 +189,74 @@ export default function App() {
               fontWeight: 600,
               fontSize: "1rem",
               cursor: "pointer",
-              transition: "border-color 0.3s ease, box-shadow 0.3s ease",
-              outline: "none",
               boxShadow: "0 4px 8px rgba(242, 131, 21, 0.25)",
               minWidth: "160px",
               appearance: "none",
-              WebkitAppearance: "none",
-              MozAppearance: "none",
               backgroundImage: `url("data:image/svg+xml;utf8,<svg fill='%23f28315' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>")`,
               backgroundRepeat: "no-repeat",
               backgroundPosition: "right 12px center",
               backgroundSize: "16px",
             }}
-            onFocus={(e) => {
-              e.target.style.borderColor = "#d97603";
-              e.target.style.boxShadow = "0 0 10px #d97603";
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = "#f28315";
-              e.target.style.boxShadow = "0 4px 8px rgba(242, 131, 21, 0.25)";
-            }}
           >
             <option value="undercounter">Undercounter</option>
             <option value="visicooler">Visicooler</option>
+            <option value="deepfridge">Deep Fridge</option>
           </select>
         </Box>
 
+        {/* Interface */}
         <Box sx={{ p: 3, height: "100%", overflowY: "auto" }}>
-          {modelType === "undercounter" ? (
+          {modelType === "undercounter" && (
             <UnderCounterInterface
               onDoorChange={handleDoorChange}
-              onHDRIChange={handleHDRIChange}
               onMaterialChange={handleMaterialChange}
               onLightChange={handleLightChange}
-              // NEW
               onDoorTypeChange={setDoorType}
               doorType={doorType}
             />
-          ) : (
+          )}
+          {modelType === "visicooler" && (
             <VisicoolerInterface
               onDoorChange={handleDoorChange}
-              onHDRIChange={handleHDRIChange}
               onMaterialChange={handleMaterialChange}
               onLightChange={handleLightChange}
               onLEDToggle={handleLEDToggle}
+              onCanopyColorChange={setCanopyColor}
+              canopyColor={canopyColor}
+              onBottomBorderColorChange={setBottomBorderColor}
+              bottomBorderColor={bottomBorderColor}
+              onDoorColorChange={setDoorColor}
+              doorColor={doorColor}
+            />
+          )}
+          {modelType === "deepfridge" && (
+            <DeepFridgeInterface
+              onDoorChange={handleDoorChange}
+              onMaterialChange={handleMaterialChange}
+              onLightChange={handleLightChange}
             />
           )}
         </Box>
       </Paper>
 
+      {/* 3D Canvas */}
       <Box sx={{ flex: 1, position: "relative" }}>
-        <Canvas
-          shadows
-          camera={{ position: [-4, 2, 7], fov: 45 }}
-          style={{ width: "100%", height: "100%" }}
-          gl={{ preserveDrawingBuffer: true }} // important for toDataURL to work
-        > 
-          <Suspense fallback={<Loader />}>
+        <Canvas shadows camera={{ position: [4, 4, 8], fov: 35 }}>
           <GLProvider setGL={setGL} />
           <CanvasContent
             modelType={modelType}
-            hdri={hdri}
             materialProps={materialProps}
             lightSettings={lightSettings}
             underCounterRef={underCounterRef}
             visiCoolerRef={visiCoolerRef}
+            deepFridgeRef={deepFridgeRef}
             handleLEDToggle={handleLEDToggle}
             doorType={doorType}
+            canopyColor={canopyColor}
+            bottomBorderColor={bottomBorderColor}
+            doorColor={doorColor}
           />
-          </Suspense>
         </Canvas>
-
         <DownloadButton gl={gl} />
       </Box>
     </Box>
