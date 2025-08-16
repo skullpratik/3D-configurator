@@ -19,28 +19,20 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
   const raycaster = useRef(new THREE.Raycaster());
   const mouse = useRef(new THREE.Vector2());
 
-  
-  // ----------------------- INITIAL SCENE SETUP -----------------------
   useEffect(() => {
     if (!scene) return;
 
-    
-
-
-    // LED inside Visicooler
     const led = scene.getObjectByName("LEDLight1001");
     if (led) {
       ledLight1001Ref.current = led;
       led.visible = false;
     }
 
-    // Door & Glass
     doorRef.current = scene.getObjectByName("Door") || null;
     glassRef.current = scene.getObjectByName("Glass") || null;
     if (doorRef.current) doorRef.current.rotation.y = 0;
     if (glassRef.current) glassRef.current.rotation.y = 0;
 
-    // Blender Point light
     const pointLight = scene.getObjectByName("Point");
     if (pointLight) {
       pointLightRef.current = pointLight;
@@ -48,13 +40,11 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
       pointLightRef.current.visible = false;
     }
 
-    // Ambient light
     const ambient = new THREE.AmbientLight(0xffffff, 0.4);
     ambient.visible = false;
     scene.add(ambient);
     ambientLightRef.current = ambient;
 
-    // Click to open/close door
     const handleClick = (event) => {
       const rect = gl.domElement.getBoundingClientRect();
       mouse.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -76,7 +66,6 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
     return () => gl.domElement.removeEventListener("click", handleClick);
   }, [scene, gl, camera]);
 
-  // ----------------------- APPLY LED / LIGHTS -----------------------
   useEffect(() => {
     if (!ledLight1001Ref.current || !pointLightRef.current || !ambientLightRef.current) return;
     ledLight1001Ref.current.visible = ledVisible;
@@ -84,62 +73,39 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
     ambientLightRef.current.visible = ledVisible;
   }, [ledVisible]);
 
-  // ----------------------- APPLY CANOPY COLOR -----------------------
-  useEffect(() => {
-    if (!scene || !canopyColor) return;
-    const canopyMeshes = ["Kanopiborder1", "Kanopiborder2", "Kanopiborder3", "Kanopiborder4"];
-    canopyMeshes.forEach(name => {
-      const obj = scene.getObjectByName(name);
-      if (!obj) return;
-      obj.traverse(c => {
-        if (c.isMesh) c.material = new THREE.MeshStandardMaterial({ color: new THREE.Color(canopyColor), roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide });
-      });
+  // Helper function
+  const applyColor = (objName, color) => {
+    if (!scene) return;
+    const obj = scene.getObjectByName(objName);
+    if (!obj) return;
+    obj.traverse(c => {
+      if (c.isMesh) {
+        c.material = color
+          ? new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide })
+          : new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide });
+      }
     });
-  }, [scene, canopyColor]);
+  };
 
-  // ----------------------- APPLY BOTTOM BORDER COLOR -----------------------
   useEffect(() => {
-    if (!scene || !bottomBorderColor) return;
-    const bottomBorders = ["Bottomborder1", "Bottomborder2"];
-    bottomBorders.forEach(name => {
-      const obj = scene.getObjectByName(name);
-      if (!obj) return;
-      obj.traverse(c => {
-        if (c.isMesh) c.material = new THREE.MeshStandardMaterial({ color: new THREE.Color(bottomBorderColor), roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide });
-      });
-    });
-  }, [scene, bottomBorderColor]);
+    ["Kanopiborder1","Kanopiborder2","Kanopiborder3","Kanopiborder4"].forEach(name => applyColor(name, canopyColor));
+  }, [canopyColor]);
 
-  // ----------------------- APPLY DOOR COLOR -----------------------
   useEffect(() => {
-    if (!scene || !doorColor || !doorRef.current) return;
-    doorRef.current.traverse(c => {
-      if (c.isMesh) c.material = new THREE.MeshStandardMaterial({ color: new THREE.Color(doorColor), roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide });
-    });
-  }, [scene, doorColor]);
+    ["Bottomborder1","Bottomborder2"].forEach(name => applyColor(name, bottomBorderColor));
+  }, [bottomBorderColor]);
 
-  // ----------------------- APPLY TOP PANEL COLOR -----------------------
-  useEffect(() => {
-    if (!scene || !topPanelColor) return;
-    const topPanel = scene.getObjectByName("Toppannel");
-    if (!topPanel) return;
-    topPanel.traverse(c => {
-      if (c.isMesh) c.material = new THREE.MeshStandardMaterial({ color: new THREE.Color(topPanelColor), roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide });
-    });
-  }, [scene, topPanelColor]);
+  useEffect(() => { if (doorRef.current) applyColor("Door", doorColor); }, [doorColor]);
+  useEffect(() => { applyColor("Toppannel", topPanelColor); }, [topPanelColor]);
 
-  // ----------------------- SCENE TRANSFORM & SHADOWS -----------------------
   useEffect(() => {
     if (!scene || !threeScene) return;
     threeScene.background = null;
-    scene.scale.set(2, 2, 2);
-    scene.position.set(0, -1.1, -0.4);
-    scene.traverse(c => {
-      if (c.isMesh && c.name !== "Door") { c.castShadow = true; c.receiveShadow = true; }
-    });
+    scene.scale.set(2,2,2);
+    scene.position.set(0,-1.1,-0.4);
+    scene.traverse(c => { if (c.isMesh && c.name!=="Door") { c.castShadow = true; c.receiveShadow = true; } });
   }, [scene, threeScene]);
 
-  // ----------------------- EXPOSE API -----------------------
   useImperativeHandle(ref, () => ({
     toggleLEDLight1001(visible) {
       if (ledLight1001Ref.current) ledLight1001Ref.current.visible = visible;
@@ -148,7 +114,6 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
     }
   }));
 
-  // ----------------------- RENDER -----------------------
   return (
     <Suspense fallback={null}>
       {!ledVisible && <Environment files="photo_studio_01_4k.hdr" background={false} intensity={1.2} />}

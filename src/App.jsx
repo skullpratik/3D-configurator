@@ -88,8 +88,8 @@ function CanvasContent({
           canopyColor={canopyColor}
           bottomBorderColor={bottomBorderColor}
           doorColor={doorColor}
-          topPanelColor={topPanelColor} // NEW
-          ledVisible={lightSettings.ledVisible} // Pass LED state
+          topPanelColor={topPanelColor}
+          ledVisible={lightSettings.ledVisible}
         />
       );
     case "deepfridge":
@@ -124,7 +124,7 @@ export default function App() {
   const [canopyColor, setCanopyColor] = useState(null);
   const [bottomBorderColor, setBottomBorderColor] = useState(null);
   const [doorColor, setDoorColor] = useState(null);
-  const [topPanelColor, setTopPanelColor] = useState(null); // NEW
+  const [topPanelColor, setTopPanelColor] = useState(null);
 
   const handleDoorChange = (count, position) => {
     const ref =
@@ -225,8 +225,8 @@ export default function App() {
               bottomBorderColor={bottomBorderColor}
               onDoorColorChange={setDoorColor}
               doorColor={doorColor}
-              onTopPanelColorChange={setTopPanelColor} // NEW
-              topPanelColor={topPanelColor}           // NEW
+              onTopPanelColorChange={setTopPanelColor}
+              topPanelColor={topPanelColor}
             />
           )}
           {modelType === "deepfridge" && (
@@ -255,7 +255,7 @@ export default function App() {
             canopyColor={canopyColor}
             bottomBorderColor={bottomBorderColor}
             doorColor={doorColor}
-            topPanelColor={topPanelColor} // NEW
+            topPanelColor={topPanelColor}
           />
         </Canvas>
         <DownloadButton gl={gl} />

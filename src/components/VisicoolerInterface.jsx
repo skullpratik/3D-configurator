@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Typography, Switch, FormControlLabel } from "@mui/material";
+import { Box, Typography, FormControl, Select, MenuItem, Switch, FormControlLabel } from "@mui/material";
 
 export const Interface = ({
   onLEDToggle,
@@ -15,11 +15,12 @@ export const Interface = ({
   const [ledVisible, setLedVisible] = useState(false);
 
   const colorOptions = [
-    { label: "Red", value: "#ff0000" },
-    { label: "Blue", value: "#0000ff" },
-    { label: "Green", value: "#00ff00" },
+    { label: "No Color", value: null },
+    { label: "Red", value: "#ff4c4c" },
+    { label: "Blue", value: "#4c6eff" },
+    { label: "Green", value: "#4cff88" },
     { label: "Orange", value: "#ffa500" },
-    { label: "Black", value: "#000000" }
+    { label: "Black", value: "#333333" }
   ];
 
   const handleLED = (e) => {
@@ -27,90 +28,69 @@ export const Interface = ({
     onLEDToggle?.(e.target.checked);
   };
 
-  const handleColorSelect = (color, type) => {
+  const handleColorChange = (type, value) => {
     switch(type){
-      case 'canopy': onCanopyColorChange?.(color); break;
-      case 'bottom': onBottomBorderColorChange?.(color); break;
-      case 'door': onDoorColorChange?.(color); break;
-      case 'toppanel': onTopPanelColorChange?.(color); break;
+      case 'canopy': onCanopyColorChange?.(value); break;
+      case 'bottom': onBottomBorderColorChange?.(value); break;
+      case 'door': onDoorColorChange?.(value); break;
+      case 'toppanel': onTopPanelColorChange?.(value); break;
       default: break;
     }
   };
 
+  const renderColorDropdown = (label, selectedColor, type) => (
+    <FormControl fullWidth size="small" sx={{ mb: 1 }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>{label}</Typography>
+      <Select
+        value={selectedColor ?? ""}
+        onChange={(e) => handleColorChange(type, e.target.value || null)}
+        displayEmpty
+        sx={{
+          borderRadius: 1.5,
+          backgroundColor: "#f7f9fc",
+          fontSize: 14,
+          "& .MuiSelect-select": { py: 0.8, px: 1.2 },
+          "& .MuiOutlinedInput-notchedOutline": { borderColor: "#ccc" },
+          "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#007bff" }
+        }}
+      >
+        {colorOptions.map(c => (
+          <MenuItem key={c.label} value={c.value ?? ""}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box sx={{
+                width: 14, height: 14, borderRadius: "50%",
+                backgroundColor: c.value || "#ffffff",
+                border: c.value ? "1px solid #ccc" : "1px dashed #aaa"
+              }} />
+              <Typography sx={{ fontSize: 13 }}>{c.label}</Typography>
+            </Box>
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, px: 1 }}>
       <FormControlLabel
-        control={<Switch checked={ledVisible} onChange={handleLED} />}
-        label="LED Light"
+        control={
+          <Switch
+            checked={ledVisible}
+            onChange={handleLED}
+            sx={{
+              "& .MuiSwitch-switchBase.Mui-checked": { color: "#007bff" },
+              "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { backgroundColor: "#007bff" },
+              "& .MuiSwitch-track": { borderRadius: 20 }
+            }}
+          />
+        }
+        label={<Typography sx={{ fontWeight: 600, fontSize: 14 }}>LED Light</Typography>}
       />
 
-      {/* Canopy color */}
-      <Box>
-        <Typography variant="subtitle2">Canopy Border Color</Typography>
-        <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-          {colorOptions.map(c => (
-            <Box key={c.label} onClick={() => handleColorSelect(c.value,'canopy')}
-              sx={{
-                width: 32, height: 32, borderRadius: "50%",
-                backgroundColor: c.value,
-                border: canopyColor === c.value ? "3px solid #333" : "1px solid #ccc",
-                cursor: "pointer"
-              }}
-            />
-          ))}
-        </Box>
-      </Box>
-
-      {/* Bottom border color */}
-      <Box>
-        <Typography variant="subtitle2">Bottom Border Color</Typography>
-        <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-          {colorOptions.map(c => (
-            <Box key={c.label} onClick={() => handleColorSelect(c.value,'bottom')}
-              sx={{
-                width: 32, height: 32, borderRadius: "50%",
-                backgroundColor: c.value,
-                border: bottomBorderColor === c.value ? "3px solid #333" : "1px solid #ccc",
-                cursor: "pointer"
-              }}
-            />
-          ))}
-        </Box>
-      </Box>
-
-      {/* Door color */}
-      <Box>
-        <Typography variant="subtitle2">Door Color</Typography>
-        <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-          {colorOptions.map(c => (
-            <Box key={c.label} onClick={() => handleColorSelect(c.value,'door')}
-              sx={{
-                width: 32, height: 32, borderRadius: "50%",
-                backgroundColor: doorColor === c.value ? c.value : c.value,
-                border: doorColor === c.value ? "3px solid #333" : "1px solid #ccc",
-                cursor: "pointer"
-              }}
-            />
-          ))}
-        </Box>
-      </Box>
-
-      {/* Top Panel color */}
-      <Box>
-        <Typography variant="subtitle2">Top Panel Color</Typography>
-        <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-          {colorOptions.map(c => (
-            <Box key={c.label} onClick={() => handleColorSelect(c.value,'toppanel')}
-              sx={{
-                width: 32, height: 32, borderRadius: "50%",
-                backgroundColor: c.value,
-                border: topPanelColor === c.value ? "3px solid #333" : "1px solid #ccc",
-                cursor: "pointer"
-              }}
-            />
-          ))}
-        </Box>
-      </Box>
+      {renderColorDropdown("Canopy Border Color", canopyColor, "canopy")}
+      {renderColorDropdown("Bottom Border Color", bottomBorderColor, "bottom")}
+      {renderColorDropdown("Door Color", doorColor, "door")}
+      {renderColorDropdown("Top Panel Color", topPanelColor, "toppanel")}
     </Box>
   );
 };
