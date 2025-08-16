@@ -63,9 +63,12 @@ const positionConfigs = {
 // Preload GLTF
 useGLTF.preload("/models/pra.glb");
 
-export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr", doorType = "solid" }, ref) => {
+export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr", doorType = "solid", onAssetLoaded }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/pra.glb");
+  const { scene } = useGLTF("/models/pra.glb", undefined, undefined, (loader) => {
+    // Call the loading callback when model is loaded
+    if (onAssetLoaded) onAssetLoaded();
+  });
 
   const allObjects = useRef({});
   const activeDrawers = useRef([]);
@@ -124,16 +127,13 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
     scene.scale.set(2, 2, 2);
     scene.position.set(0, -0.836, 0);
 
-
     scene.traverse((child) => {
-      scene.traverse((child) => {
-    if (child.isMesh && child.material) {
-      // Update metalness and roughness
-      child.material.metalness = 1; // adjust value 0 to 1
-      child.material.roughness = 0.4; // adjust value 0 to 1
-      child.material.needsUpdate = true; // important to apply changes
-    }
-  });
+      if (child.isMesh && child.material) {
+        // Update metalness and roughness
+        child.material.metalness = 1;
+        child.material.roughness = 0.4;
+        child.material.needsUpdate = true;
+      }
 
       if (!child?.name) return;
       allObjects.current[child.name] = child;
@@ -148,9 +148,16 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
       if (logoRef.current) logoRef.current.position.set(0.522, 0.722, 0.39);
 
       if (child.name === "Logo" || child.name === "Logo.001") logoRef.current = child;
-      if (child.name === "Logo2") { logo2Ref.current = child; logo2InitialRot.current.copy(child.rotation); logo2Ref.current.visible = false; }
+      if (child.name === "Logo2") { 
+        logo2Ref.current = child; 
+        logo2InitialRot.current.copy(child.rotation); 
+        logo2Ref.current.visible = false; 
+      }
 
-      if (TARGET_GROUPS.includes(child.name)) { child.position.z = CLOSED_Z; drawerStates.current[child.name] = "closed"; }
+      if (TARGET_GROUPS.includes(child.name)) { 
+        child.position.z = CLOSED_Z; 
+        drawerStates.current[child.name] = "closed"; 
+      }
     });
 
     updateActiveObjects();
@@ -254,7 +261,12 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
 
   return (
     <Suspense fallback={null}>
-      <Environment files="photo_studio_01_4k.hdr" background={false} intensity={1.2} />
+      <Environment 
+        files="photo_studio_01_4k.hdr" 
+        background={false} 
+        intensity={1.2} 
+        onLoad={onAssetLoaded} // Add loading callback
+      />
       
       <ambientLight />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]} receiveShadow>

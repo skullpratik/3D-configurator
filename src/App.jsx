@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Box, Paper, Typography } from "@mui/material";
 import { Interface as UnderCounterInterface } from "./components/UnderCounterInterface";
 import { Interface as VisicoolerInterface } from "./components/VisicoolerInterface";
@@ -7,7 +7,7 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { Experience as UnderCounterExperience } from "./components/UnderCounterExperience";
 import { Experience as VisicoolerExperience } from "./components/VisicoolerExperience";
 import { Experience as DeepFridgeExperience } from "./components/DeepFridgeExperience";
-import { Loader } from "./components/loading";
+import { Loader } from "./components/Loader";
 
 // GL provider
 function GLProvider({ setGL }) {
@@ -65,7 +65,9 @@ function CanvasContent({
   canopyColor,
   bottomBorderColor,
   doorColor,
-  topPanelColor
+  topPanelColor,
+  ledEnabled,
+  onAssetLoaded
 }) {
   switch (modelType) {
     case "undercounter":
@@ -76,6 +78,7 @@ function CanvasContent({
           roughness={materialProps.roughness}
           lightSettings={lightSettings}
           doorType={doorType}
+          onAssetLoaded={onAssetLoaded}
         />
       );
     case "visicooler":
@@ -90,6 +93,7 @@ function CanvasContent({
           doorColor={doorColor}
           topPanelColor={topPanelColor}
           ledVisible={lightSettings.ledVisible}
+          onAssetLoaded={onAssetLoaded}
         />
       );
     case "deepfridge":
@@ -99,6 +103,8 @@ function CanvasContent({
           metalness={materialProps.metalness}
           roughness={materialProps.roughness}
           lightSettings={lightSettings}
+          ledEnabled={ledEnabled}
+          onAssetLoaded={onAssetLoaded}
         />
       );
     default:
@@ -120,11 +126,48 @@ export default function App() {
     ledVisible: false,
   });
   const [doorType, setDoorType] = useState("solid");
+  const [ledEnabled, setLedEnabled] = useState(true); // For Deep Fridge LED
 
   const [canopyColor, setCanopyColor] = useState(null);
   const [bottomBorderColor, setBottomBorderColor] = useState(null);
   const [doorColor, setDoorColor] = useState(null);
   const [topPanelColor, setTopPanelColor] = useState(null);
+
+  // Loading state
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadedAssets, setLoadedAssets] = useState(0);
+  const totalAssets = 2; // Model + environment
+
+  // Handle asset loading progress
+  const handleAssetLoaded = () => {
+    setLoadedAssets(prev => {
+      const newValue = prev + 1;
+      const progress = Math.min(100, Math.round((newValue / totalAssets) * 100));
+      setLoadingProgress(progress);
+      if (newValue === totalAssets) {
+        setTimeout(() => setIsLoading(false), 300);
+      }
+      return newValue;
+    });
+  };
+
+  // Simulate loading if assets don't report back
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isLoading && loadingProgress < 100) {
+        setLoadingProgress(prev => {
+          const newProgress = Math.min(100, prev + 10);
+          if (newProgress === 100) {
+            setIsLoading(false);
+          }
+          return newProgress;
+        });
+      }
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [isLoading, loadingProgress]);
 
   const handleDoorChange = (count, position) => {
     const ref =
@@ -147,8 +190,18 @@ export default function App() {
     }
   };
 
+  if (isLoading) {
+    return <Loader progress={loadingProgress} />;
+  }
+
   return (
-    <Box sx={{ display: "flex", height: "100vh", width: "100vw" }}>
+    <Box sx={{ 
+      display: "flex", 
+      height: "100vh", 
+      width: "100vw",
+      opacity: loadingProgress === 100 ? 1 : 0,
+      transition: "opacity 0.5s ease-in-out"
+    }}>
       <Paper
         elevation={3}
         sx={{
@@ -234,6 +287,7 @@ export default function App() {
               onDoorChange={handleDoorChange}
               onMaterialChange={handleMaterialChange}
               onLightChange={() => {}}
+              onLEDToggle={setLedEnabled}
             />
           )}
         </Box>
@@ -256,6 +310,8 @@ export default function App() {
             bottomBorderColor={bottomBorderColor}
             doorColor={doorColor}
             topPanelColor={topPanelColor}
+            ledEnabled={ledEnabled}
+            onAssetLoaded={handleAssetLoaded}
           />
         </Canvas>
         <DownloadButton gl={gl} />

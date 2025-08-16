@@ -6,9 +6,12 @@ import gsap from "gsap";
 
 useGLTF.preload("/models/xyz.glb");
 
-export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColor, topPanelColor, ledVisible }, ref) => {
+export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColor, topPanelColor, ledVisible, onAssetLoaded }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/xyz.glb");
+  const { scene } = useGLTF("/models/xyz.glb", undefined, undefined, (loader) => {
+    // Signal model is loaded
+    if (onAssetLoaded) onAssetLoaded();
+  });
 
   const doorRef = useRef();
   const glassRef = useRef();
@@ -104,7 +107,10 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
     scene.scale.set(2,2,2);
     scene.position.set(0,-1.1,-0.4);
     scene.traverse(c => { if (c.isMesh && c.name!=="Door") { c.castShadow = true; c.receiveShadow = true; } });
-  }, [scene, threeScene]);
+    
+    // Signal scene is ready
+    if (onAssetLoaded) onAssetLoaded();
+  }, [scene, threeScene, onAssetLoaded]);
 
   useImperativeHandle(ref, () => ({
     toggleLEDLight1001(visible) {
@@ -116,7 +122,12 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
 
   return (
     <Suspense fallback={null}>
-      {!ledVisible && <Environment files="photo_studio_01_4k.hdr" background={false} intensity={1.2} />}
+      {!ledVisible && <Environment 
+        files="photo_studio_01_4k.hdr" 
+        background={false} 
+        intensity={1.2} 
+        onLoad={onAssetLoaded} // Signal when environment is loaded
+      />}
       <mesh rotation={[-Math.PI/2,0,0]} position={[0,-1.3,0]} receiveShadow>
         <planeGeometry args={[1000,1000]} />
         <meshStandardMaterial color="#d8d8d8" roughness={0} metalness={0} visible={false}/>

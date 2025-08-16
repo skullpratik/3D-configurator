@@ -6,9 +6,11 @@ import gsap from "gsap";
 
 useGLTF.preload("/models/Untitled.glb");
 
-export function Experience() {
+export function Experience({ ledEnabled = true, onAssetLoaded }) {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/Untitled.glb");
+  const { scene } = useGLTF("/models/Untitled.glb", undefined, undefined, (loader) => {
+    if (onAssetLoaded) onAssetLoaded();
+  });
 
   const door1Ref = useRef(null);
   const door2Ref = useRef(null);
@@ -16,9 +18,26 @@ export function Experience() {
   const isDoor2Open = useRef(false);
   const raycaster = useRef(new THREE.Raycaster());
   const mouse = useRef(new THREE.Vector2());
+  
+  // LED lights
+  const light1Ref = useRef();
+  const light2Ref = useRef();
+  const isLight1On = useRef(false);
+  const isLight2On = useRef(false);
 
   useEffect(() => {
     if (!scene || !threeScene) return;
+
+    // Create LED lights
+    const light1 = new THREE.PointLight(0xffffff, 0, 1.5);
+    light1.position.set(-0.5, 0.5, 0.3);
+    scene.add(light1);
+    light1Ref.current = light1;
+
+    const light2 = new THREE.PointLight(0xffffff, 0, 1.5);
+    light2.position.set(0.5, 0.5, 0.3);
+    scene.add(light2);
+    light2Ref.current = light2;
 
     // Background
     threeScene.background = null;
@@ -51,44 +70,69 @@ export function Experience() {
       raycaster.current.setFromCamera(mouse.current, camera);
 
       // Door1
-if (door1Ref.current) {
-  const intersects = raycaster.current.intersectObject(door1Ref.current, true);
-  if (intersects.length > 0) {
-    const targetRotation = isDoor1Open.current ? 0 : -(Math.PI/2) ; // forward
-    gsap.to(door1Ref.current.rotation, {
-      x: targetRotation,
-      duration: 1,
-      ease: "power2.inOut",
-    });
-    isDoor1Open.current = !isDoor1Open.current;
-    return;
-  }
-}
+      if (door1Ref.current) {
+        const intersects = raycaster.current.intersectObject(door1Ref.current, true);
+        if (intersects.length > 0) {
+          const targetRotation = isDoor1Open.current ? 0 : -(Math.PI/2);
+          gsap.to(door1Ref.current.rotation, {
+            x: targetRotation,
+            duration: 1,
+            ease: "power2.inOut",
+          });
+          
+          // Toggle LED light if enabled
+          if (ledEnabled) {
+            const targetIntensity = isDoor1Open.current ? 0 : 1;
+            gsap.to(light1Ref.current, { 
+              intensity: targetIntensity,
+              duration: 0.5,
+              ease: "power2.out"
+            });
+          }
+          
+          isDoor1Open.current = !isDoor1Open.current;
+          return;
+        }
+      }
 
-// Door2
-if (door2Ref.current) {
-  const intersects = raycaster.current.intersectObject(door2Ref.current, true);
-  if (intersects.length > 0) {
-    const targetRotation = isDoor2Open.current ? 0 : -Math.PI / 2; // backward
-    gsap.to(door2Ref.current.rotation, {
-      x: targetRotation,
-      duration: 1,
-      ease: "power2.inOut",
-    });
-    isDoor2Open.current = !isDoor2Open.current;
-  }
-}
-
-      
+      // Door2
+      if (door2Ref.current) {
+        const intersects = raycaster.current.intersectObject(door2Ref.current, true);
+        if (intersects.length > 0) {
+          const targetRotation = isDoor2Open.current ? 0 : -Math.PI / 2;
+          gsap.to(door2Ref.current.rotation, {
+            x: targetRotation,
+            duration: 1,
+            ease: "power2.inOut",
+          });
+          
+          // Toggle LED light if enabled
+          if (ledEnabled) {
+            const targetIntensity = isDoor2Open.current ? 0 : 1;
+            gsap.to(light2Ref.current, { 
+              intensity: targetIntensity,
+              duration: 0.5,
+              ease: "power2.out"
+            });
+          }
+          
+          isDoor2Open.current = !isDoor2Open.current;
+        }
+      }
     };
 
     gl.domElement.addEventListener("click", handleClick);
     return () => gl.domElement.removeEventListener("click", handleClick);
-  }, [scene, threeScene, camera, gl]);
+  }, [scene, threeScene, camera, gl, ledEnabled]);
 
   return (
     <>
-      <Environment files="photo_studio_01_4k.hdr" background={false} intensity={1.2} />
+      <Environment 
+        files="photo_studio_01_4k.hdr" 
+        background={false} 
+        intensity={1.2}
+        onLoad={onAssetLoaded}
+      />
 
       <ContactShadows
         position={[0, -1.1, 0]}
