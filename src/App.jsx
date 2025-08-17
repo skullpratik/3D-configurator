@@ -271,16 +271,26 @@ export default function App() {
           )}
           {modelType === "visicooler" && (
             <VisicoolerInterface
-              onLEDToggle={handleLEDToggle}
-              onCanopyColorChange={setCanopyColor}
-              canopyColor={canopyColor}
-              onBottomBorderColorChange={setBottomBorderColor}
-              bottomBorderColor={bottomBorderColor}
-              onDoorColorChange={setDoorColor}
-              doorColor={doorColor}
-              onTopPanelColorChange={setTopPanelColor}
-              topPanelColor={topPanelColor}
-            />
+    onLEDToggle={handleLEDToggle}
+    onCanopyColorChange={setCanopyColor}
+    canopyColor={canopyColor}
+    onBottomBorderColorChange={setBottomBorderColor}
+    bottomBorderColor={bottomBorderColor}
+    onDoorColorChange={setDoorColor}
+    doorColor={doorColor}
+    onTopPanelColorChange={setTopPanelColor}
+    topPanelColor={topPanelColor}
+   onCanopyTextureUpload={(imageUrl) => {
+    if (visiCoolerRef.current?.applyCanopyTexture) {
+      visiCoolerRef.current.applyCanopyTexture(imageUrl);
+     }
+   }}
+  onCanopyTextureReset={() => {
+    if (visiCoolerRef.current?.resetCanopy) {
+      visiCoolerRef.current.resetCanopy();
+    }
+  }}
+  />
           )}
           {modelType === "deepfridge" && (
             <DeepFridgeInterface

@@ -4,12 +4,11 @@ import { Environment, ContactShadows, OrbitControls, useGLTF } from "@react-thre
 import * as THREE from "three";
 import gsap from "gsap";
 
-useGLTF.preload("/models/xyz.glb");
+useGLTF.preload("/models/axyz.glb");
 
 export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColor, topPanelColor, ledVisible, onAssetLoaded }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/xyz.glb", undefined, undefined, (loader) => {
-    // Signal model is loaded
+  const { scene } = useGLTF("/models/axyz.glb", undefined, undefined, (loader) => {
     if (onAssetLoaded) onAssetLoaded();
   });
 
@@ -21,6 +20,27 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
   const isDoorOpen = useRef(false);
   const raycaster = useRef(new THREE.Raycaster());
   const mouse = useRef(new THREE.Vector2());
+  const canopyTextureRef = useRef(null);
+  const canopyMeshRef = useRef(null);
+
+
+
+  
+
+  // Find and store the canopy mesh reference
+  useEffect(() => {
+    if (!scene) return;
+    
+    scene.traverse((child) => {
+      if (child.isMesh && child.name.toLowerCase().includes("canopy")) {
+        canopyMeshRef.current = child;
+        // Store original material for reset
+        if (!child.userData.originalMaterial) {
+          child.userData.originalMaterial = child.material.clone();
+        }
+      }
+    });
+  }, [scene]);
 
   useEffect(() => {
     if (!scene) return;
@@ -76,7 +96,7 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
     ambientLightRef.current.visible = ledVisible;
   }, [ledVisible]);
 
-  // Helper function
+  // Helper function to apply colors
   const applyColor = (objName, color) => {
     if (!scene) return;
     const obj = scene.getObjectByName(objName);
@@ -88,6 +108,72 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
           : new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide });
       }
     });
+  };
+
+  // Function to apply custom texture to canopy
+const applyCanopyTexture = (imageUrl) => {
+  if (!canopyMeshRef.current) return;
+
+  if (canopyTextureRef.current) {
+    canopyTextureRef.current.dispose();
+    canopyTextureRef.current = null;
+  }
+
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext("2d");
+
+    // fill background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // squeeze factor (e.g. 0.9 = 90% height)
+    const squeezeY = 0.4;
+
+    // new height after squeezing
+    const newHeight = img.height * squeezeY;
+
+    // vertical offset to keep centered
+    const offsetY = (canvas.height - newHeight) / 2;
+
+    // ✅ draw squeezed image
+    ctx.drawImage(img, 0, offsetY, canvas.width, newHeight);
+
+    // make texture
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.encoding = THREE.sRGBEncoding;
+    tex.anisotropy = 16;
+    tex.flipY = false;
+
+    canopyMeshRef.current.material = new THREE.MeshStandardMaterial({
+      map: tex,
+      color: 0xffffff,
+      roughness: 0.3,
+      metalness: 0.2,
+      side: THREE.DoubleSide,
+    });
+
+    canopyTextureRef.current = tex;
+  };
+
+  img.crossOrigin = "anonymous";
+  img.src = imageUrl;
+};
+
+
+  // Function to reset canopy to original appearance
+  const resetCanopy = () => {
+    if (canopyMeshRef.current && canopyMeshRef.current.userData.originalMaterial) {
+      canopyMeshRef.current.material = canopyMeshRef.current.userData.originalMaterial;
+    }
+    
+    if (canopyTextureRef.current) {
+      canopyTextureRef.current.dispose();
+      canopyTextureRef.current = null;
+    }
   };
 
   useEffect(() => {
@@ -108,16 +194,26 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
     scene.position.set(0,-1.1,-0.4);
     scene.traverse(c => { if (c.isMesh && c.name!=="Door") { c.castShadow = true; c.receiveShadow = true; } });
     
-    // Signal scene is ready
     if (onAssetLoaded) onAssetLoaded();
   }, [scene, threeScene, onAssetLoaded]);
+
+  // Clean up textures on unmount
+  useEffect(() => {
+    return () => {
+      if (canopyTextureRef.current) {
+        canopyTextureRef.current.dispose();
+      }
+    };
+  }, []);
 
   useImperativeHandle(ref, () => ({
     toggleLEDLight1001(visible) {
       if (ledLight1001Ref.current) ledLight1001Ref.current.visible = visible;
       if (pointLightRef.current) pointLightRef.current.visible = visible;
       if (ambientLightRef.current) ambientLightRef.current.visible = visible;
-    }
+    },
+    applyCanopyTexture, // Expose texture application method
+    resetCanopy // Expose reset method
   }));
 
   return (
@@ -126,7 +222,7 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
         files="photo_studio_01_4k.hdr" 
         background={false} 
         intensity={1.2} 
-        onLoad={onAssetLoaded} // Signal when environment is loaded
+        onLoad={onAssetLoaded}
       />}
       <mesh rotation={[-Math.PI/2,0,0]} position={[0,-1.3,0]} receiveShadow>
         <planeGeometry args={[1000,1000]} />

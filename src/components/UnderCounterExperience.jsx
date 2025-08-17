@@ -265,7 +265,7 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
         files="photo_studio_01_4k.hdr" 
         background={false} 
         intensity={1.2} 
-        onLoad={onAssetLoaded} // Add loading callback
+        onLoad={onAssetLoaded}
       />
       
       <ambientLight />

@@ -28,23 +28,13 @@ export function Experience({ ledEnabled = true, onAssetLoaded }) {
   useEffect(() => {
     if (!scene || !threeScene) return;
 
-    // Create LED lights
-    const light1 = new THREE.PointLight(0xffffff, 0, 1.5);
-    light1.position.set(-0.5, 0.5, 0.3);
-    scene.add(light1);
-    light1Ref.current = light1;
-
-    const light2 = new THREE.PointLight(0xffffff, 0, 1.5);
-    light2.position.set(0.5, 0.5, 0.3);
-    scene.add(light2);
-    light2Ref.current = light2;
-
+   
     // Background
     threeScene.background = null;
 
     // Model scale & position
     scene.scale.set(2, 2, 2);
-    scene.position.set(0.2, -1.1, 0);
+    scene.position.set(0.2, -1.16, 0);
 
     // Shadows
     scene.traverse((obj) => {
