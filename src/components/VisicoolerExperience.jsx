@@ -6,6 +6,7 @@ import gsap from "gsap";
 
 useGLTF.preload("/models/axyz.glb");
 
+
 export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColor, topPanelColor, ledVisible, onAssetLoaded }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
   const { scene } = useGLTF("/models/axyz.glb", undefined, undefined, (loader) => {
@@ -219,7 +220,7 @@ const applyCanopyTexture = (imageUrl) => {
   return (
     <Suspense fallback={null}>
       {!ledVisible && <Environment 
-        files="photo_studio_01_4k.hdr" 
+        files="photo_studio_01_2k.hdr" 
         background={false} 
         intensity={1.2} 
         onLoad={onAssetLoaded}

@@ -19,7 +19,10 @@ const GLASS_DOORS = ["GlassDoor-01", "GlassDoor-02", "GlassDoor-03"];
 const ALL_DOORS = [...SOLID_DOORS, ...GLASS_DOORS];
 
 const PANELS = ["Door_Inside_Panel___01", "Door_Inside_Panel___02", "Door_Inside_Panel___03"];
-const GlassPanels=["GlassDoorHinges1", "GlassDoorHinges2", "GlassDoorHinges3"];
+const GlassPanels = ["GlassDoorHinges1", "GlassDoorHinges2", "GlassDoorHinges3"];
+
+// For direct mesh-level control inside solid door objects:
+const SOLID_DOOR_MESH_PREFIXES = ["Door_01_", "Door_02_", "Door_03_"]; // matches Door_01_1, Door_02_3, etc.
 
 // Door rotation configuration
 const doorConfig = {
@@ -63,12 +66,9 @@ const positionConfigs = {
 // Preload GLTF
 useGLTF.preload("/models/pra.glb");
 
-export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr", doorType = "solid", onAssetLoaded }, ref) => {
+export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr", doorType = "solid" }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/pra.glb", undefined, undefined, (loader) => {
-    // Call the loading callback when model is loaded
-    if (onAssetLoaded) onAssetLoaded();
-  });
+  const { scene } = useGLTF("/models/pra.glb");
 
   const allObjects = useRef({});
   const activeDrawers = useRef([]);
@@ -120,6 +120,40 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
     lastSelectionRef.current = { doors: [], panels: [], drawers: [] };
   };
 
+  // Helpers to apply materials
+  const applyBaseMaterialTuning = (obj) => {
+    if (!obj) return;
+    obj.traverse((n) => {
+      if (n.isMesh && n.material) {
+        // Global base look (keep your defaults)
+        n.material.metalness = 1;
+        n.material.roughness = 0.3;
+        n.material.needsUpdate = true;
+      }
+    });
+  };
+
+  const isSolidDoorInnerMesh = (meshName) =>
+    SOLID_DOOR_MESH_PREFIXES.some((prefix) => meshName?.startsWith(prefix));
+
+  const applySolidDoorMaterialTuning = (obj) => {
+    if (!obj) return;
+    obj.traverse((n) => {
+      if (n.isMesh && n.material && isSolidDoorInnerMesh(n.name)) {
+        // Ensure independent material instance in case of sharing
+        if (!n.material.isMeshStandardMaterial) return;
+        if (n.material.userData?._clonedForDoor !== true) {
+          n.material = n.material.clone();
+          n.material.userData._clonedForDoor = true;
+        }
+        // Your desired solid door metalness/roughness
+        n.material.metalness = 1;  // lower = less mirror-like metal
+        n.material.roughness = 0.2;  // higher = more diffuse
+        n.material.needsUpdate = true;
+      }
+    });
+  };
+
   // Initialize scene and objects
   useEffect(() => {
     if (!scene) return;
@@ -127,15 +161,13 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
     scene.scale.set(2, 2, 2);
     scene.position.set(0, -0.836, 0);
 
-    scene.traverse((child) => {
-      if (child.isMesh && child.material) {
-        // Update metalness and roughness
-        child.material.metalness = 1;
-        child.material.roughness = 0.4;
-        child.material.needsUpdate = true;
-      }
+    // One pass only
+    applyBaseMaterialTuning(scene);
+    applySolidDoorMaterialTuning(scene);
 
+    scene.traverse((child) => {
       if (!child?.name) return;
+
       allObjects.current[child.name] = child;
 
       if (ALL_DOORS.includes(child.name)) {
@@ -145,20 +177,22 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
       }
       if (PANELS.includes(child.name)) child.visible = false;
       if (GlassPanels.includes(child.name)) child.visible = false;
-      if (logoRef.current) logoRef.current.position.set(0.522, 0.722, 0.39);
 
       if (child.name === "Logo" || child.name === "Logo.001") logoRef.current = child;
-      if (child.name === "Logo2") { 
-        logo2Ref.current = child; 
-        logo2InitialRot.current.copy(child.rotation); 
-        logo2Ref.current.visible = false; 
+      if (child.name === "Logo2") {
+        logo2Ref.current = child;
+        logo2InitialRot.current.copy(child.rotation);
+        logo2Ref.current.visible = false;
       }
 
-      if (TARGET_GROUPS.includes(child.name)) { 
-        child.position.z = CLOSED_Z; 
-        drawerStates.current[child.name] = "closed"; 
+      if (TARGET_GROUPS.includes(child.name)) {
+        child.position.z = CLOSED_Z;
+        drawerStates.current[child.name] = "closed";
       }
     });
+
+    // Keep logo1's initial position
+    if (logoRef.current) logoRef.current.position.set(0.522, 0.722, 0.39);
 
     updateActiveObjects();
     updateLogoVisibility();
@@ -261,17 +295,12 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
 
   return (
     <Suspense fallback={null}>
-      <Environment 
-        files="photo_studio_01_4k.hdr" 
-        background={false} 
-        intensity={1.2} 
-        onLoad={onAssetLoaded}
-      />
-      
+      <Environment files="photo_studio_01_2k.hdr" background={false} intensity={1} />
+
       <ambientLight />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]} receiveShadow>
         <planeGeometry args={[1000, 1000]} />
-        <meshStandardMaterial color="#d8d8d8" roughness={0} metalness={0} visible={false}/>
+        <meshStandardMaterial color="#d8d8d8" roughness={0} metalness={0} visible={false} />
       </mesh>
       <ContactShadows position={[0, -0.95, 0]} opacity={1} scale={15} blur={2.5} far={10} />
       <OrbitControls

@@ -13,19 +13,16 @@ import {
   Radio,
 } from "@mui/material";
 
-export const Interface = ({
-  onDoorChange,
-  onDoorTypeChange,
-  doorType = "solid",
-}) => {
+export const Interface = ({ onDoorChange, onDoorTypeChange, doorType = "solid" }) => {
   const [doorCount, setDoorCount] = useState("");
   const [doorPosition, setDoorPosition] = useState("");
   const [localDoorType, setLocalDoorType] = useState(doorType);
 
   useEffect(() => setLocalDoorType(doorType), [doorType]);
 
-  const handleDoorCountChange = (event) => {
-    const count = Number(event.target.value);
+  // Handle number of doors
+  const handleDoorCountChange = (e) => {
+    const count = Number(e.target.value);
     setDoorCount(count);
 
     if (count === 3) {
@@ -37,29 +34,30 @@ export const Interface = ({
     }
   };
 
-  const handlePositionChange = (event) => {
-    const pos = Number(event.target.value);
+  // Handle position change
+  const handlePositionChange = (e) => {
+    const pos = Number(e.target.value);
     setDoorPosition(pos);
     onDoorChange?.(doorCount, pos);
   };
 
+  // Dynamic options for door positions
   const positionOptions = useMemo(() => {
-    switch (doorCount) {
-      case 1:
-        return [
-          { value: 1, label: "Left" },
-          { value: 2, label: "Center" },
-          { value: 3, label: "Right" },
-        ];
-      case 2:
-        return [
-          { value: 1, label: "Left + Center" },
-          { value: 2, label: "Left + Right" },
-          { value: 3, label: "Center + Right" },
-        ];
-      default:
-        return [];
+    if (doorCount === 1) {
+      return [
+        { value: 1, label: "Left" },
+        { value: 2, label: "Center" },
+        { value: 3, label: "Right" },
+      ];
     }
+    if (doorCount === 2) {
+      return [
+        { value: 1, label: "Left + Center" },
+        { value: 2, label: "Left + Right" },
+        { value: 3, label: "Center + Right" },
+      ];
+    }
+    return [];
   }, [doorCount]);
 
   const cardStyle = {
@@ -76,7 +74,7 @@ export const Interface = ({
   return (
     <Box sx={{ p: 2, maxWidth: 400 }}>
       <Stack spacing={3}>
-        {/* Door Config Card */}
+        {/* Door Config */}
         <Paper sx={cardStyle}>
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
             Door Configuration
@@ -84,13 +82,19 @@ export const Interface = ({
           <Stack spacing={2}>
             <FormControl fullWidth>
               <FormLabel sx={labelStyle}>Number of Doors</FormLabel>
-              <Select value={doorCount} onChange={handleDoorCountChange} displayEmpty>
+              <Select
+                value={doorCount}
+                onChange={handleDoorCountChange}
+                displayEmpty
+              >
                 <MenuItem value="">
                   <em>Select</em>
                 </MenuItem>
-                <MenuItem value={1}>1 Door</MenuItem>
-                <MenuItem value={2}>2 Doors</MenuItem>
-                <MenuItem value={3}>3 Doors</MenuItem>
+                {[1, 2, 3].map((num) => (
+                  <MenuItem key={num} value={num}>
+                    {num} Door{num > 1 ? "s" : ""}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
 
@@ -99,7 +103,11 @@ export const Interface = ({
                 <FormLabel sx={labelStyle}>
                   {doorCount === 1 ? "Door Position" : "Door Combination"}
                 </FormLabel>
-                <Select value={doorPosition} onChange={handlePositionChange} displayEmpty>
+                <Select
+                  value={doorPosition}
+                  onChange={handlePositionChange}
+                  displayEmpty
+                >
                   <MenuItem value="">
                     <em>Select</em>
                   </MenuItem>
@@ -123,8 +131,9 @@ export const Interface = ({
                 row
                 value={localDoorType}
                 onChange={(e) => {
-                  setLocalDoorType(e.target.value);
-                  onDoorTypeChange?.(e.target.value);
+                  const newType = e.target.value;
+                  setLocalDoorType(newType);
+                  onDoorTypeChange?.(newType);
                 }}
               >
                 <FormControlLabel value="solid" control={<Radio />} label="Solid" />
@@ -135,7 +144,10 @@ export const Interface = ({
         )}
       </Stack>
 
-      <Typography sx={{ mt: 2, textAlign: "center", color: "#777" }} variant="caption">
+      <Typography
+        sx={{ mt: 2, textAlign: "center", color: "#777" }}
+        variant="caption"
+      >
         Click on doors and drawers to interact
       </Typography>
     </Box>

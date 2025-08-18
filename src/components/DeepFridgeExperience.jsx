@@ -4,11 +4,11 @@ import { Environment, ContactShadows, OrbitControls, useGLTF } from "@react-thre
 import * as THREE from "three";
 import gsap from "gsap";
 
-useGLTF.preload("/models/Untitled.glb");
+useGLTF.preload("/models/Deepfreezer.glb");
 
 export function Experience({ ledEnabled = true, onAssetLoaded }) {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/Untitled.glb", undefined, undefined, (loader) => {
+  const { scene } = useGLTF("/models/Deepfreezer.glb", undefined, undefined, (loader) => {
     if (onAssetLoaded) onAssetLoaded();
   });
 
@@ -118,7 +118,7 @@ export function Experience({ ledEnabled = true, onAssetLoaded }) {
   return (
     <>
       <Environment 
-        files="photo_studio_01_4k.hdr" 
+        files="photo_studio_01_2k.hdr" 
         background={false} 
         intensity={1.2}
         onLoad={onAssetLoaded}
