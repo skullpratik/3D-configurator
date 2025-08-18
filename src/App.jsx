@@ -17,32 +17,34 @@ function GLProvider({ setGL }) {
 }
 
 // Download screenshot button
-function DownloadButton({ gl }) {
+function DownloadButton({ gl, disabled }) {
   if (!gl) return null;
   const handleDownload = () => {
-    const dataURL = gl.domElement.toDataURL("image/png");
-    const link = document.createElement("a");
-    link.href = dataURL;
-    link.download = "model-view.png";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    if (!gl) return;
+    setTimeout(() => {
+      const dataURL = gl.domElement.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = dataURL;
+      link.download = "model-view.png";
+      link.click();
+    }, 100); // small delay to ensure final frame renders
   };
   return (
     <button
       onClick={handleDownload}
+      disabled={disabled}
       style={{
         position: "fixed",
         bottom: 20,
         left: "90%",
         transform: "translateX(-50%)",
         padding: "10px 15px",
-        backgroundColor: "#007bff",
+        backgroundColor: disabled ? "#aaa" : "#007bff",
         border: "none",
         borderRadius: 8,
         color: "white",
         fontSize: 16,
-        cursor: "pointer",
+        cursor: disabled ? "not-allowed" : "pointer",
         zIndex: 10000,
         boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
       }}
@@ -126,7 +128,7 @@ export default function App() {
     ledVisible: false,
   });
   const [doorType, setDoorType] = useState("solid");
-  const [ledEnabled, setLedEnabled] = useState(true); // For Deep Fridge LED
+  const [ledEnabled, setLedEnabled] = useState(true);
 
   const [canopyColor, setCanopyColor] = useState(null);
   const [bottomBorderColor, setBottomBorderColor] = useState(null);
@@ -139,7 +141,6 @@ export default function App() {
   const [loadedAssets, setLoadedAssets] = useState(0);
   const totalAssets = 2; // Model + environment
 
-  // Handle asset loading progress
   const handleAssetLoaded = () => {
     setLoadedAssets(prev => {
       const newValue = prev + 1;
@@ -152,7 +153,6 @@ export default function App() {
     });
   };
 
-  // Simulate loading if assets don't report back
   useEffect(() => {
     const timer = setTimeout(() => {
       if (isLoading && loadingProgress < 100) {
@@ -165,7 +165,7 @@ export default function App() {
         });
       }
     }, 1000);
-    
+
     return () => clearTimeout(timer);
   }, [isLoading, loadingProgress]);
 
@@ -195,13 +195,7 @@ export default function App() {
   }
 
   return (
-    <Box sx={{ 
-      display: "flex", 
-      height: "100vh", 
-      width: "100vw",
-      opacity: loadingProgress === 100 ? 1 : 0,
-      transition: "opacity 0.5s ease-in-out"
-    }}>
+    <Box sx={{ display: "flex", height: "100vh", width: "100vw", opacity: loadingProgress === 100 ? 1 : 0, transition: "opacity 0.5s ease-in-out" }}>
       <Paper
         elevation={3}
         sx={{
@@ -213,7 +207,6 @@ export default function App() {
           borderRight: "1px solid rgba(0,0,0,0.08)",
         }}
       >
-        {/* Header */}
         <Box
           sx={{
             px: 3,
@@ -245,11 +238,6 @@ export default function App() {
               cursor: "pointer",
               boxShadow: "0 4px 8px rgba(242, 131, 21, 0.25)",
               minWidth: "160px",
-              appearance: "none",
-              backgroundImage: `url("data:image/svg+xml;utf8,<svg fill='%23f28315' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>")`,
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "right 12px center",
-              backgroundSize: "16px",
             }}
           >
             <option value="undercounter">Undercounter</option>
@@ -258,7 +246,6 @@ export default function App() {
           </select>
         </Box>
 
-        {/* Interface */}
         <Box sx={{ p: 3, height: "100%", overflowY: "auto" }}>
           {modelType === "undercounter" && (
             <UnderCounterInterface
@@ -271,26 +258,26 @@ export default function App() {
           )}
           {modelType === "visicooler" && (
             <VisicoolerInterface
-    onLEDToggle={handleLEDToggle}
-    onCanopyColorChange={setCanopyColor}
-    canopyColor={canopyColor}
-    onBottomBorderColorChange={setBottomBorderColor}
-    bottomBorderColor={bottomBorderColor}
-    onDoorColorChange={setDoorColor}
-    doorColor={doorColor}
-    onTopPanelColorChange={setTopPanelColor}
-    topPanelColor={topPanelColor}
-   onCanopyTextureUpload={(imageUrl) => {
-    if (visiCoolerRef.current?.applyCanopyTexture) {
-      visiCoolerRef.current.applyCanopyTexture(imageUrl);
-     }
-   }}
-  onCanopyTextureReset={() => {
-    if (visiCoolerRef.current?.resetCanopy) {
-      visiCoolerRef.current.resetCanopy();
-    }
-  }}
-  />
+              onLEDToggle={handleLEDToggle}
+              onCanopyColorChange={setCanopyColor}
+              canopyColor={canopyColor}
+              onBottomBorderColorChange={setBottomBorderColor}
+              bottomBorderColor={bottomBorderColor}
+              onDoorColorChange={setDoorColor}
+              doorColor={doorColor}
+              onTopPanelColorChange={setTopPanelColor}
+              topPanelColor={topPanelColor}
+              onCanopyTextureUpload={(imageUrl) => {
+                if (visiCoolerRef.current?.applyCanopyTexture) {
+                  visiCoolerRef.current.applyCanopyTexture(imageUrl);
+                }
+              }}
+              onCanopyTextureReset={() => {
+                if (visiCoolerRef.current?.resetCanopy) {
+                  visiCoolerRef.current.resetCanopy();
+                }
+              }}
+            />
           )}
           {modelType === "deepfridge" && (
             <DeepFridgeInterface
@@ -303,9 +290,8 @@ export default function App() {
         </Box>
       </Paper>
 
-      {/* 3D Canvas */}
       <Box sx={{ flex: 1, position: "relative" }}>
-        <Canvas shadows camera={{ position: [4, 4, 8], fov: 35 }}>
+        <Canvas shadows camera={{ position: [4, 4, 8], fov: 35 }} gl={{ preserveDrawingBuffer: true }}>
           <GLProvider setGL={setGL} />
           <CanvasContent
             modelType={modelType}
@@ -324,7 +310,7 @@ export default function App() {
             onAssetLoaded={handleAssetLoaded}
           />
         </Canvas>
-        <DownloadButton gl={gl} />
+        <DownloadButton gl={gl} disabled={isLoading} />
       </Box>
     </Box>
   );

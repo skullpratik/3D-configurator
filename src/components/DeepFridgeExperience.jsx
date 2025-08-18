@@ -118,7 +118,7 @@ export function Experience({ ledEnabled = true, onAssetLoaded }) {
   return (
     <>
       <Environment 
-        files="photo_studio_01_2k.hdr" 
+        files="photo_studio_01_1k.hdr" 
         background={false} 
         intensity={1.2}
         onLoad={onAssetLoaded}
