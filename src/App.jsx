@@ -277,6 +277,17 @@ export default function App() {
                   visiCoolerRef.current.resetCanopy();
                 }
               }}
+              // 👇 New: Side Panel 1 callbacks
+              onSidePanelTextureUpload={(imageUrl) => {
+                if (visiCoolerRef.current?.applySidePanelTexture) {
+                  visiCoolerRef.current.applySidePanelTexture(imageUrl);
+                }
+              }}
+              onSidePanelTextureReset={() => {
+                if (visiCoolerRef.current?.resetSidePanel) {
+                  visiCoolerRef.current.resetSidePanel();
+                }
+              }}
             />
           )}
           {modelType === "deepfridge" && (

@@ -26,12 +26,21 @@ export const Interface = ({
   onTopPanelColorChange,
   topPanelColor,
   onCanopyTextureUpload,
-  onCanopyTextureReset
+  onCanopyTextureReset,
+  // 👇 new props for Side Panel 1
+  onSidePanelTextureUpload,
+  onSidePanelTextureReset
 }) => {
   const [ledVisible, setLedVisible] = useState(false);
+
   const [uploading, setUploading] = useState(false);
   const [canopyImage, setCanopyImage] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Side Panel 1 UI state
+  const [sideUploading, setSideUploading] = useState(false);
+  const [sidePanelImage, setSidePanelImage] = useState(null);
+  const sideFileInputRef = useRef(null);
 
   const colorOptions = [
     { label: "No Color", value: null },
@@ -57,6 +66,7 @@ export const Interface = ({
     }
   };
 
+  // Canopy upload
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -67,11 +77,7 @@ export const Interface = ({
     reader.onload = (e) => {
       const imageUrl = e.target.result;
       setCanopyImage(imageUrl);
-      
-      if (onCanopyTextureUpload) {
-        onCanopyTextureUpload(imageUrl);
-      }
-      
+      onCanopyTextureUpload?.(imageUrl);
       setUploading(false);
     };
     
@@ -85,14 +91,40 @@ export const Interface = ({
 
   const handleResetTexture = () => {
     setCanopyImage(null);
-    if (onCanopyTextureReset) {
-      onCanopyTextureReset();
-    }
+    onCanopyTextureReset?.();
   };
 
-  const triggerFileInput = () => {
-    fileInputRef.current.click();
+  const triggerFileInput = () => fileInputRef.current?.click();
+
+  // Side Panel 1 upload
+  const handleSideImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setSideUploading(true);
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const imageUrl = e.target.result;
+      setSidePanelImage(imageUrl);
+      onSidePanelTextureUpload?.(imageUrl);
+      setSideUploading(false);
+    };
+
+    reader.onerror = () => {
+      setSideUploading(false);
+      console.error("Error reading side panel file");
+    };
+
+    reader.readAsDataURL(file);
   };
+
+  const handleSideResetTexture = () => {
+    setSidePanelImage(null);
+    onSidePanelTextureReset?.();
+  };
+
+  const triggerSideFileInput = () => sideFileInputRef.current?.click();
 
   const renderColorDropdown = (label, selectedColor, type) => (
     <FormControl fullWidth size="small" sx={{ mb: 1 }}>
@@ -218,12 +250,87 @@ export const Interface = ({
         </Typography>
       </Box>
 
+      {/* Side Panel 1 Image Upload Section */}
+      <Box sx={{ mb: 1 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+          Side Panel Image (SidePannel1)
+        </Typography>
+        
+        {sidePanelImage ? (
+          <Box sx={{ position: 'relative', mb: 1 }}>
+            <Box 
+              component="img" 
+              src={sidePanelImage} 
+              sx={{ 
+                width: '100%', 
+                height: 100, 
+                objectFit: 'cover', 
+                borderRadius: 1.5,
+                border: '1px solid #e0e0e0'
+              }} 
+              alt="Side panel texture" 
+            />
+            <IconButton
+              size="small"
+              onClick={handleSideResetTexture}
+              sx={{
+                position: 'absolute',
+                top: 4,
+                right: 4,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: 'rgba(0,0,0,0.7)'
+                }
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        ) : (
+          <Button
+            variant="outlined"
+            component="label"
+            fullWidth
+            startIcon={<CloudUploadIcon />}
+            sx={{
+              py: 1.2,
+              backgroundColor: '#f7f9fc',
+              border: '1px dashed #ccc',
+              '&:hover': {
+                border: '1px dashed #007bff',
+                backgroundColor: '#e3f2fd'
+              }
+            }}
+            onClick={triggerSideFileInput}
+          >
+            {sideUploading ? (
+              <CircularProgress size={24} />
+            ) : (
+              "Upload Custom Image"
+            )}
+          </Button>
+        )}
+        
+        <input
+          type="file"
+          ref={sideFileInputRef}
+          onChange={handleSideImageUpload}
+          accept="image/*"
+          hidden
+        />
+        
+        <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: '#666' }}>
+          JPG, PNG, or GIF. Max 5MB.
+        </Typography>
+      </Box>
+
       {renderColorDropdown("Canopy Border Color", canopyColor, "canopy")}
       {renderColorDropdown("Bottom Border Color", bottomBorderColor, "bottom")}
       {renderColorDropdown("Door Color", doorColor, "door")}
       {renderColorDropdown("Top Panel Color", topPanelColor, "toppanel")}
       
-      {/* Reset Button */}
+      {/* Reset Buttons */}
       {canopyImage && (
         <Button
           variant="outlined"
@@ -234,6 +341,19 @@ export const Interface = ({
           sx={{ mt: 1 }}
         >
           Reset Canopy Texture
+        </Button>
+      )}
+
+      {sidePanelImage && (
+        <Button
+          variant="outlined"
+          color="error"
+          size="small"
+          onClick={handleSideResetTexture}
+          fullWidth
+          sx={{ mt: 1 }}
+        >
+          Reset Side Panel Texture
         </Button>
       )}
     </Box>

@@ -4,12 +4,11 @@ import { Environment, ContactShadows, OrbitControls, useGLTF } from "@react-thre
 import * as THREE from "three";
 import gsap from "gsap";
 
-useGLTF.preload("/models/axyz.glb");
-
+useGLTF.preload("/models/UV.glb");
 
 export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColor, topPanelColor, ledVisible, onAssetLoaded }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/axyz.glb", undefined, undefined, (loader) => {
+  const { scene } = useGLTF("/models/UV.glb", undefined, undefined, (loader) => {
     if (onAssetLoaded) onAssetLoaded();
   });
 
@@ -21,28 +20,70 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
   const isDoorOpen = useRef(false);
   const raycaster = useRef(new THREE.Raycaster());
   const mouse = useRef(new THREE.Vector2());
+
   const canopyTextureRef = useRef(null);
   const canopyMeshRef = useRef(null);
 
+  const sidePanel1MeshRef = useRef(null);
+  const sidePanel1TextureRef = useRef(null);
+  const sidePanel1OriginalMatRef = useRef(null);
 
+  const sidePanel2MeshRef = useRef(null);
+  const sidePanel2TextureRef = useRef(null);
+  const sidePanel2OriginalMatRef = useRef(null);
 
-  
-
-  // Find and store the canopy mesh reference
+  // --- Check UV mapping & store original materials ---
   useEffect(() => {
     if (!scene) return;
-    
+
+    const checkUV = (meshName) => {
+      const obj = scene.getObjectByName(meshName);
+      if (obj && obj.isMesh) {
+        if (obj.geometry.attributes.uv) {
+          console.log(`${meshName} ✅ has UV mapping`);
+        } else {
+          console.warn(`${meshName} ❌ has NO UV mapping`);
+        }
+      } else {
+        console.warn(`${meshName} not found or not a mesh`);
+      }
+    };
+
+    checkUV("SidePannel1");
+    checkUV("SidePannel2");
+
+    // canopy
     scene.traverse((child) => {
       if (child.isMesh && child.name.toLowerCase().includes("canopy")) {
         canopyMeshRef.current = child;
-        // Store original material for reset
         if (!child.userData.originalMaterial) {
           child.userData.originalMaterial = child.material.clone();
         }
       }
     });
+
+    // SidePannel1
+    const sp1 = scene.getObjectByName("SidePannel1");
+    if (sp1 && sp1.isMesh) {
+      sidePanel1MeshRef.current = sp1;
+      if (!sp1.userData.originalMaterial) {
+        sp1.userData.originalMaterial = sp1.material.clone();
+      }
+      sidePanel1OriginalMatRef.current = sp1.userData.originalMaterial;
+    }
+
+    // SidePannel2
+    const sp2 = scene.getObjectByName("SidePannel2");
+    if (sp2 && sp2.isMesh) {
+      sidePanel2MeshRef.current = sp2;
+      if (!sp2.userData.originalMaterial) {
+        sp2.userData.originalMaterial = sp2.material.clone();
+      }
+      sidePanel2OriginalMatRef.current = sp2.userData.originalMaterial;
+    }
   }, [scene]);
 
+  // --- Door, Lights, Click Logic ---
   useEffect(() => {
     if (!scene) return;
 
@@ -97,7 +138,7 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
     ambientLightRef.current.visible = ledVisible;
   }, [ledVisible]);
 
-  // Helper function to apply colors
+  // --- Color Helper ---
   const applyColor = (objName, color) => {
     if (!scene) return;
     const obj = scene.getObjectByName(objName);
@@ -111,72 +152,119 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
     });
   };
 
-  // Function to apply custom texture to canopy
-const applyCanopyTexture = (imageUrl) => {
-  if (!canopyMeshRef.current) return;
+  // --- Canopy Branding ---
+  const applyCanopyTexture = (imageUrl) => {
+    if (!canopyMeshRef.current) return;
 
-  if (canopyTextureRef.current) {
-    canopyTextureRef.current.dispose();
-    canopyTextureRef.current = null;
-  }
+    if (canopyTextureRef.current) {
+      canopyTextureRef.current.dispose();
+      canopyTextureRef.current = null;
+    }
 
-  const img = new Image();
-  img.onload = () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = img.width;
-    canvas.height = img.height;
-    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
 
-    // fill background
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // squeeze factor (e.g. 0.9 = 90% height)
-    const squeezeY = 0.4;
+      const squeezeY = 0.4;
+      const newHeight = img.height * squeezeY;
+      const offsetY = (canvas.height - newHeight) / 2;
 
-    // new height after squeezing
-    const newHeight = img.height * squeezeY;
+      ctx.drawImage(img, 0, offsetY, canvas.width, newHeight);
 
-    // vertical offset to keep centered
-    const offsetY = (canvas.height - newHeight) / 2;
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.encoding = THREE.sRGBEncoding;
+      tex.anisotropy = 16;
+      tex.flipY = false;
 
-    // ✅ draw squeezed image
-    ctx.drawImage(img, 0, offsetY, canvas.width, newHeight);
+      canopyMeshRef.current.material = new THREE.MeshStandardMaterial({
+        map: tex,
+        color: 0xffffff,
+        roughness: 0.3,
+        metalness: 0.2,
+        side: THREE.DoubleSide,
+      });
 
-    // make texture
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.encoding = THREE.sRGBEncoding;
-    tex.anisotropy = 16;
-    tex.flipY = false;
+      canopyTextureRef.current = tex;
+    };
 
-    canopyMeshRef.current.material = new THREE.MeshStandardMaterial({
-      map: tex,
-      color: 0xffffff,
-      roughness: 0.3,
-      metalness: 0.2,
-      side: THREE.DoubleSide,
-    });
-
-    canopyTextureRef.current = tex;
+    img.crossOrigin = "anonymous";
+    img.src = imageUrl;
   };
 
-  img.crossOrigin = "anonymous";
-  img.src = imageUrl;
-};
-
-
-  // Function to reset canopy to original appearance
   const resetCanopy = () => {
     if (canopyMeshRef.current && canopyMeshRef.current.userData.originalMaterial) {
       canopyMeshRef.current.material = canopyMeshRef.current.userData.originalMaterial;
     }
-    
     if (canopyTextureRef.current) {
       canopyTextureRef.current.dispose();
       canopyTextureRef.current = null;
     }
   };
 
+  // --- Apply Side Panel 1 & 2 Texture ---
+  const applySidePanelTexture = (imageUrl) => {
+    const tex = new THREE.TextureLoader().load(
+      imageUrl,
+      (t) => {
+        t.encoding = THREE.sRGBEncoding;
+        t.anisotropy = 16;
+        t.flipY = false;
+        t.offset.y = -0.2;
+        t.center.set(0.5, 0.5);
+        t.rotation = Math.PI / 2;
+        t.repeat.set(0.85, 3);
+        t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+
+        if (sidePanel1MeshRef.current) {
+          sidePanel1MeshRef.current.material = new THREE.MeshStandardMaterial({
+            map: t,
+            roughness: 0.4,
+            metalness: 0.1,
+            side: THREE.DoubleSide,
+          });
+          sidePanel1MeshRef.current.material.needsUpdate = true;
+          sidePanel1TextureRef.current = t;
+        }
+
+        if (sidePanel2MeshRef.current) {
+          sidePanel2MeshRef.current.material = new THREE.MeshStandardMaterial({
+            map: t,
+            roughness: 0.4,
+            metalness: 0.1,
+            side: THREE.DoubleSide,
+          });
+          sidePanel2MeshRef.current.material.needsUpdate = true;
+          sidePanel2TextureRef.current = t;
+        }
+
+        console.log("✅ Side panel 1 & 2 texture applied");
+      }
+    );
+  };
+
+  const resetSidePanel = () => {
+    if (sidePanel1MeshRef.current && sidePanel1OriginalMatRef.current) {
+      sidePanel1MeshRef.current.material = sidePanel1OriginalMatRef.current;
+    }
+    if (sidePanel2MeshRef.current && sidePanel2OriginalMatRef.current) {
+      sidePanel2MeshRef.current.material = sidePanel2OriginalMatRef.current;
+    }
+    if (sidePanel1TextureRef.current) sidePanel1TextureRef.current.dispose();
+    if (sidePanel2TextureRef.current) sidePanel2TextureRef.current.dispose();
+
+    sidePanel1TextureRef.current = null;
+    sidePanel2TextureRef.current = null;
+
+    console.log("♻️ Side panels reset");
+  };
+
+  // --- Colors ---
   useEffect(() => {
     ["Kanopiborder1","Kanopiborder2","Kanopiborder3","Kanopiborder4"].forEach(name => applyColor(name, canopyColor));
   }, [canopyColor]);
@@ -186,8 +274,14 @@ const applyCanopyTexture = (imageUrl) => {
   }, [bottomBorderColor]);
 
   useEffect(() => { if (doorRef.current) applyColor("Door", doorColor); }, [doorColor]);
-  useEffect(() => { applyColor("Toppannel", topPanelColor); }, [topPanelColor]);
+ useEffect(() => {
+  ["Toppannel", "Back1", "Back2", "Back3", "Back4"].forEach((name) => {
+    applyColor(name, topPanelColor);
+  });
+}, [topPanelColor]);
 
+
+  // --- Scene Setup ---
   useEffect(() => {
     if (!scene || !threeScene) return;
     threeScene.background = null;
@@ -198,12 +292,12 @@ const applyCanopyTexture = (imageUrl) => {
     if (onAssetLoaded) onAssetLoaded();
   }, [scene, threeScene, onAssetLoaded]);
 
-  // Clean up textures on unmount
+  // --- Cleanup ---
   useEffect(() => {
     return () => {
-      if (canopyTextureRef.current) {
-        canopyTextureRef.current.dispose();
-      }
+      if (canopyTextureRef.current) canopyTextureRef.current.dispose();
+      if (sidePanel1TextureRef.current) sidePanel1TextureRef.current.dispose();
+      if (sidePanel2TextureRef.current) sidePanel2TextureRef.current.dispose();
     };
   }, []);
 
@@ -213,8 +307,10 @@ const applyCanopyTexture = (imageUrl) => {
       if (pointLightRef.current) pointLightRef.current.visible = visible;
       if (ambientLightRef.current) ambientLightRef.current.visible = visible;
     },
-    applyCanopyTexture, // Expose texture application method
-    resetCanopy // Expose reset method
+    applyCanopyTexture,
+    resetCanopy,
+    applySidePanelTexture,  // ✅ now applies to both panels
+    resetSidePanel
   }));
 
   return (
