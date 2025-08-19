@@ -69,7 +69,9 @@ function CanvasContent({
   doorColor,
   topPanelColor,
   ledEnabled,
-  onAssetLoaded
+  louverColor,
+  onAssetLoaded,
+  colorShading
 }) {
   switch (modelType) {
     case "undercounter":
@@ -95,7 +97,9 @@ function CanvasContent({
           doorColor={doorColor}
           topPanelColor={topPanelColor}
           ledVisible={lightSettings.ledVisible}
+          louverColor={louverColor}
           onAssetLoaded={onAssetLoaded}
+          colorShading={colorShading}
         />
       );
     case "deepfridge":
@@ -130,10 +134,18 @@ export default function App() {
   const [doorType, setDoorType] = useState("solid");
   const [ledEnabled, setLedEnabled] = useState(true);
 
-  const [canopyColor, setCanopyColor] = useState(null);
+ const [canopyColor, setCanopyColor] = useState(null);
   const [bottomBorderColor, setBottomBorderColor] = useState(null);
   const [doorColor, setDoorColor] = useState(null);
   const [topPanelColor, setTopPanelColor] = useState(null);
+  const [louverColor, setLouverColor] = useState(null);
+  const [colorShading, setColorShading] = useState({
+    canopy: 0,
+    bottom: 0,
+    door: 0,
+    toppanel: 0,
+    louver: 0
+  });
 
   // Loading state
   const [isLoading, setIsLoading] = useState(true);
@@ -267,6 +279,9 @@ export default function App() {
               doorColor={doorColor}
               onTopPanelColorChange={setTopPanelColor}
               topPanelColor={topPanelColor}
+              onLouverColorChange={setLouverColor}
+              louverColor={louverColor}
+              onColorShadingChange={setColorShading}
 
               onCanopyTextureUpload={(imageUrl) => {
                 if (visiCoolerRef.current?.applyCanopyTexture) {
@@ -308,6 +323,7 @@ export default function App() {
               }}
             />
           )}
+
           {modelType === "deepfridge" && (
             <DeepFridgeInterface
               onDoorChange={handleDoorChange}
@@ -335,8 +351,12 @@ export default function App() {
             bottomBorderColor={bottomBorderColor}
             doorColor={doorColor}
             topPanelColor={topPanelColor}
+            louverColor={louverColor}
+            colorShading={colorShading}
             ledEnabled={ledEnabled}
             onAssetLoaded={handleAssetLoaded}
+            
+            
           />
         </Canvas>
         <DownloadButton gl={gl} disabled={isLoading} />

@@ -19,7 +19,8 @@
     "react-color": "^2.19.3",
     "react-dom": "^18.2.0",
     "react-scripts": "^5.0.1",
-    "three": "0.146.0"
+    "three": "0.146.0",
+    "tinycolor2": "^1.6.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.23",

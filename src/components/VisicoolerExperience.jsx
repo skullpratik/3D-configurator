@@ -3,10 +3,20 @@ import { useThree } from "@react-three/fiber";
 import { Environment, ContactShadows, OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import gsap from "gsap";
+import tinycolor from "tinycolor2";
 
 useGLTF.preload("/models/UV.glb");
 
-export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColor, topPanelColor, ledVisible, onAssetLoaded }, ref) => {
+export const Experience = forwardRef(({ 
+  canopyColor, 
+  bottomBorderColor, 
+  doorColor, 
+  topPanelColor, 
+  ledVisible, 
+  louverColor, 
+  colorShading, // Add this prop
+  onAssetLoaded 
+}, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
   const { scene } = useGLTF("/models/UV.glb", undefined, undefined, () => {
     if (onAssetLoaded) onAssetLoaded();
@@ -61,6 +71,15 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
     if (Array.isArray(mat)) mesh.material = mat.map(m => m.clone());
     else mesh.material = mat.clone();
     mesh.userData._materialUnique = true;
+  };
+
+  // Helper function to adjust color brightness
+  const adjustColorBrightness = (color, adjustment) => {
+    if (!color) return null;
+    const tc = tinycolor(color);
+    return adjustment > 0 
+      ? tc.lighten(adjustment / 2).toHexString() // Divided by 2 to make adjustment less extreme
+      : tc.darken(-adjustment / 2).toHexString();
   };
 
   // --- find meshes & store original materials ---
@@ -165,13 +184,13 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
     t.encoding = THREE.sRGBEncoding;
     t.anisotropy = gl.capabilities?.getMaxAnisotropy ? gl.capabilities.getMaxAnisotropy() : 16;
     t.flipY = false;
-    t.offset.set(0.5, 0);   // adjust vertical/horizontal alignment
-    t.repeat.set(1.5, 1.6);   // perfect fit, adjust if needed
+    t.offset.set(0.5, 0);
+    t.repeat.set(1.5, 1.6);
     t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
-    t.rotation = Math.PI / 2; // no rotation needed
+    t.rotation = Math.PI / 2;
     t.center.set(0.5, 0.5);
-     t.offset.y = -0.09;
-      t.offset.x = -0.3;
+    t.offset.y = -0.09;
+    t.offset.x = -0.3;
   };
 
   // --- Canopy ---
@@ -279,22 +298,85 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
   };
 
   // --- Colors ---
-  const applyColor = (objName, color) => {
+  const applyColor = (objName, color, adjustment = 0) => {
     if (!scene) return;
     const obj = scene.getObjectByName(objName);
     if (!obj) return;
+    
+    let finalColor = color;
+    if (color && adjustment !== 0) {
+      finalColor = adjustColorBrightness(color, adjustment);
+    }
+    
     obj.traverse(c => {
       if (c.isMesh) {
-        c.material = color
-          ? new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide })
-          : new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.3, metalness: 0.2, side: THREE.DoubleSide });
+        c.material = finalColor
+          ? new THREE.MeshStandardMaterial({ 
+              color: new THREE.Color(finalColor), 
+              roughness: 0.3, 
+              metalness: 0.2, 
+              side: THREE.DoubleSide 
+            })
+          : new THREE.MeshStandardMaterial({ 
+              color: 0xaaaaaa, 
+              roughness: 0.3, 
+              metalness: 0.2, 
+              side: THREE.DoubleSide 
+            });
       }
     });
   };
-  useEffect(() => { ["Kanopiborder1","Kanopiborder2","Kanopiborder3","Kanopiborder4"].forEach(n => applyColor(n, canopyColor)); }, [canopyColor]);
-  useEffect(() => { ["Bottomborder1","Bottomborder2"].forEach(n => applyColor(n, bottomBorderColor)); }, [bottomBorderColor]);
-  useEffect(() => { if (doorRef.current) applyColor("Door", doorColor); }, [doorColor]);
-  useEffect(() => { ["Toppannel","Back1","Back2","Back3","Back4"].forEach(n => applyColor(n, topPanelColor)); }, [topPanelColor]);
+
+  // Apply colors with shading adjustments
+  useEffect(() => { 
+    ["Kanopiborder1","Kanopiborder2","Kanopiborder3","Kanopiborder4"].forEach(n => 
+      applyColor(n, canopyColor, colorShading.canopy)
+    ); 
+  }, [canopyColor, colorShading.canopy]);
+  
+  useEffect(() => { 
+    ["Bottomborder1","Bottomborder2"].forEach(n => 
+      applyColor(n, bottomBorderColor, colorShading.bottom)
+    ); 
+  }, [bottomBorderColor, colorShading.bottom]);
+  
+  useEffect(() => { 
+    if (doorRef.current) applyColor("Door", doorColor, colorShading.door); 
+  }, [doorColor, colorShading.door]);
+  
+  useEffect(() => { 
+    ["Toppannel","Back1","Back2","Back3","Back4"].forEach(n => 
+      applyColor(n, topPanelColor, colorShading.toppanel)
+    ); 
+  }, [topPanelColor, colorShading.toppanel]);
+
+  // Apply color to Louver mesh with shading
+  useEffect(() => {
+    if (!louverMeshRef.current) return;
+    
+    if (louverColor) {
+      // If color is applied, reset any texture first
+      if (louverTextureRef.current) {
+        louverTextureRef.current.dispose();
+        louverTextureRef.current = null;
+      }
+      
+      const adjustedColor = adjustColorBrightness(louverColor, colorShading.louver);
+      
+      louverMeshRef.current.material = new THREE.MeshStandardMaterial({ 
+        color: new THREE.Color(adjustedColor), 
+        roughness: 0.3, 
+        metalness: 0.2, 
+        side: THREE.DoubleSide 
+      });
+    } else {
+      // Reset to original material if no color is selected
+      if (louverOriginalMatRef.current) {
+        louverMeshRef.current.material = louverOriginalMatRef.current.clone ? 
+          louverOriginalMatRef.current.clone() : louverOriginalMatRef.current;
+      }
+    }
+  }, [louverColor, colorShading.louver]);
 
   // --- scene setup ---
   useEffect(() => {
