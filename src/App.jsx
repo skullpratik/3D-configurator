@@ -27,7 +27,7 @@ function DownloadButton({ gl, disabled }) {
       link.href = dataURL;
       link.download = "model-view.png";
       link.click();
-    }, 100); // small delay to ensure final frame renders
+    }, 100);
   };
   return (
     <button
@@ -142,7 +142,7 @@ export default function App() {
   const totalAssets = 2; // Model + environment
 
   const handleAssetLoaded = () => {
-    setLoadedAssets(prev => {
+    setLoadedAssets((prev) => {
       const newValue = prev + 1;
       const progress = Math.min(100, Math.round((newValue / totalAssets) * 100));
       setLoadingProgress(progress);
@@ -156,7 +156,7 @@ export default function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (isLoading && loadingProgress < 100) {
-        setLoadingProgress(prev => {
+        setLoadingProgress((prev) => {
           const newProgress = Math.min(100, prev + 10);
           if (newProgress === 100) {
             setIsLoading(false);
@@ -184,7 +184,7 @@ export default function App() {
   };
 
   const handleLEDToggle = (visible) => {
-    setLightSettings(prev => ({ ...prev, ledVisible: visible }));
+    setLightSettings((prev) => ({ ...prev, ledVisible: visible }));
     if (visiCoolerRef.current?.toggleLEDLight1001) {
       visiCoolerRef.current.toggleLEDLight1001(visible);
     }
@@ -267,6 +267,7 @@ export default function App() {
               doorColor={doorColor}
               onTopPanelColorChange={setTopPanelColor}
               topPanelColor={topPanelColor}
+
               onCanopyTextureUpload={(imageUrl) => {
                 if (visiCoolerRef.current?.applyCanopyTexture) {
                   visiCoolerRef.current.applyCanopyTexture(imageUrl);
@@ -277,16 +278,33 @@ export default function App() {
                   visiCoolerRef.current.resetCanopy();
                 }
               }}
-              // 👇 New: Side Panel 1 callbacks
-              onSidePanelTextureUpload={(imageUrl) => {
-                if (visiCoolerRef.current?.applySidePanelTexture) {
-                  visiCoolerRef.current.applySidePanelTexture(imageUrl);
+
+              onSidePanel1TextureUpload={(imageUrl) => {
+                if (visiCoolerRef.current?.applySidePanel1Texture) {
+                  visiCoolerRef.current.applySidePanel1Texture(imageUrl);
                 }
               }}
-              onSidePanelTextureReset={() => {
-                if (visiCoolerRef.current?.resetSidePanel) {
-                  visiCoolerRef.current.resetSidePanel();
+              onSidePanel1TextureReset={() => {
+                if (visiCoolerRef.current?.resetSidePanel1) {
+                  visiCoolerRef.current.resetSidePanel1();
                 }
+              }}
+
+              onSidePanel2TextureUpload={(imageUrl) => {
+                if (visiCoolerRef.current?.applySidePanel2Texture) {
+                  visiCoolerRef.current.applySidePanel2Texture(imageUrl);
+                }
+              }}
+              onSidePanel2TextureReset={() => {
+                if (visiCoolerRef.current?.resetSidePanel2) {
+                  visiCoolerRef.current.resetSidePanel2();
+                }
+              }}
+              onLouverTextureUpload={(url) => {
+                if (visiCoolerRef.current?.applyLouverTexture) visiCoolerRef.current.applyLouverTexture(url);
+              }}
+              onLouverTextureReset={() => {
+                if (visiCoolerRef.current?.resetLouver) visiCoolerRef.current.resetLouver();
               }}
             />
           )}

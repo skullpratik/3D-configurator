@@ -8,10 +8,11 @@ useGLTF.preload("/models/UV.glb");
 
 export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColor, topPanelColor, ledVisible, onAssetLoaded }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/UV.glb", undefined, undefined, (loader) => {
+  const { scene } = useGLTF("/models/UV.glb", undefined, undefined, () => {
     if (onAssetLoaded) onAssetLoaded();
   });
 
+  // --- refs ---
   const doorRef = useRef();
   const glassRef = useRef();
   const ledLight1001Ref = useRef();
@@ -21,69 +22,79 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
   const raycaster = useRef(new THREE.Raycaster());
   const mouse = useRef(new THREE.Vector2());
 
-  const canopyTextureRef = useRef(null);
   const canopyMeshRef = useRef(null);
+  const canopyTextureRef = useRef(null);
 
   const sidePanel1MeshRef = useRef(null);
   const sidePanel1TextureRef = useRef(null);
   const sidePanel1OriginalMatRef = useRef(null);
 
+  const louverMeshRef = useRef(null);
+  const louverTextureRef = useRef(null);
+  const louverOriginalMatRef = useRef(null);
+
   const sidePanel2MeshRef = useRef(null);
   const sidePanel2TextureRef = useRef(null);
   const sidePanel2OriginalMatRef = useRef(null);
 
-  // --- Check UV mapping & store original materials ---
+  // --- helpers ---
+  const setMapOnMesh = (mesh, tex) => {
+    if (!mesh) return;
+    const mat = mesh.material;
+    if (!mat) {
+      mesh.material = new THREE.MeshStandardMaterial({ map: tex });
+      return;
+    }
+    if (Array.isArray(mat)) {
+      mat.forEach(m => { m.map = tex; m.needsUpdate = true; });
+    } else {
+      mat.map = tex;
+      mat.needsUpdate = true;
+    }
+  };
+
+  const ensureUniqueMaterial = (mesh) => {
+    if (!mesh) return;
+    if (mesh.userData._materialUnique) return;
+    const mat = mesh.material;
+    if (!mat) return;
+    if (Array.isArray(mat)) mesh.material = mat.map(m => m.clone());
+    else mesh.material = mat.clone();
+    mesh.userData._materialUnique = true;
+  };
+
+  // --- find meshes & store original materials ---
   useEffect(() => {
     if (!scene) return;
 
-    const checkUV = (meshName) => {
-      const obj = scene.getObjectByName(meshName);
-      if (obj && obj.isMesh) {
-        if (obj.geometry.attributes.uv) {
-          console.log(`${meshName} ✅ has UV mapping`);
-        } else {
-          console.warn(`${meshName} ❌ has NO UV mapping`);
-        }
-      } else {
-        console.warn(`${meshName} not found or not a mesh`);
-      }
-    };
-
-    checkUV("SidePannel1");
-    checkUV("SidePannel2");
-
-    // canopy
     scene.traverse((child) => {
       if (child.isMesh && child.name.toLowerCase().includes("canopy")) {
         canopyMeshRef.current = child;
-        if (!child.userData.originalMaterial) {
-          child.userData.originalMaterial = child.material.clone();
-        }
+        if (!child.userData.originalMaterial) child.userData.originalMaterial = child.material.clone ? child.material.clone() : child.material;
+      }
+      if (child.isMesh && child.name === "Louver") {
+        louverMeshRef.current = child;
+        if (!child.userData.originalMaterial) child.userData.originalMaterial = child.material.clone ? child.material.clone() : child.material;
+        louverOriginalMatRef.current = child.userData.originalMaterial;
       }
     });
 
-    // SidePannel1
     const sp1 = scene.getObjectByName("SidePannel1");
     if (sp1 && sp1.isMesh) {
       sidePanel1MeshRef.current = sp1;
-      if (!sp1.userData.originalMaterial) {
-        sp1.userData.originalMaterial = sp1.material.clone();
-      }
+      if (!sp1.userData.originalMaterial) sp1.userData.originalMaterial = sp1.material.clone ? sp1.material.clone() : sp1.material;
       sidePanel1OriginalMatRef.current = sp1.userData.originalMaterial;
     }
 
-    // SidePannel2
     const sp2 = scene.getObjectByName("SidePannel2");
     if (sp2 && sp2.isMesh) {
       sidePanel2MeshRef.current = sp2;
-      if (!sp2.userData.originalMaterial) {
-        sp2.userData.originalMaterial = sp2.material.clone();
-      }
+      if (!sp2.userData.originalMaterial) sp2.userData.originalMaterial = sp2.material.clone ? sp2.material.clone() : sp2.material;
       sidePanel2OriginalMatRef.current = sp2.userData.originalMaterial;
     }
   }, [scene]);
 
-  // --- Door, Lights, Click Logic ---
+  // --- click & lights ---
   useEffect(() => {
     if (!scene) return;
 
@@ -138,7 +149,136 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
     ambientLightRef.current.visible = ledVisible;
   }, [ledVisible]);
 
-  // --- Color Helper ---
+  // --- Texture setup functions ---
+  const setupCocaParams = (t) => {
+    t.encoding = THREE.sRGBEncoding;
+    t.anisotropy = gl.capabilities?.getMaxAnisotropy ? gl.capabilities.getMaxAnisotropy() : 16;
+    t.flipY = false;
+    t.offset.y = -0.2;
+    t.center.set(0.5, 0.5);
+    t.rotation = Math.PI / 2;
+    t.repeat.set(0.85, 3);
+    t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  };
+
+  const setupLouverParams = (t) => {
+    t.encoding = THREE.sRGBEncoding;
+    t.anisotropy = gl.capabilities?.getMaxAnisotropy ? gl.capabilities.getMaxAnisotropy() : 16;
+    t.flipY = false;
+    t.offset.set(0.5, 0);   // adjust vertical/horizontal alignment
+    t.repeat.set(1.5, 1.6);   // perfect fit, adjust if needed
+    t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+    t.rotation = Math.PI / 2; // no rotation needed
+    t.center.set(0.5, 0.5);
+     t.offset.y = -0.09;
+      t.offset.x = -0.3;
+  };
+
+  // --- Canopy ---
+  const applyCanopyTexture = (imageUrl) => {
+    if (!canopyMeshRef.current) return;
+
+    const prevTex = canopyTextureRef.current;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const squeezeY = 0.4;
+      const newHeight = img.height * squeezeY;
+      const offsetY = (canvas.height - newHeight) / 2;
+      ctx.drawImage(img, 0, offsetY, canvas.width, newHeight);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.encoding = THREE.sRGBEncoding;
+      tex.anisotropy = gl.capabilities?.getMaxAnisotropy ? gl.capabilities.getMaxAnisotropy() : 16;
+      tex.flipY = false;
+      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+
+      ensureUniqueMaterial(canopyMeshRef.current);
+      setMapOnMesh(canopyMeshRef.current, tex);
+      canopyTextureRef.current = tex;
+
+      if (prevTex && prevTex !== tex && prevTex.dispose) prevTex.dispose();
+      console.log("✅ Canopy texture applied");
+    };
+    img.src = imageUrl;
+  };
+  const resetCanopy = () => {
+    const mesh = canopyMeshRef.current;
+    if (!mesh) return;
+    if (canopyTextureRef.current) { canopyTextureRef.current.dispose(); canopyTextureRef.current = null; }
+    if (mesh.userData?.originalMaterial) mesh.material = mesh.userData.originalMaterial.clone ? mesh.userData.originalMaterial.clone() : mesh.userData.originalMaterial;
+    mesh.userData._materialUnique = false;
+  };
+
+  // --- SidePanels ---
+  const applySidePanel1Texture = (imageUrl) => {
+    if (!sidePanel1MeshRef.current) return;
+    const mesh = sidePanel1MeshRef.current;
+    const prevTex = sidePanel1TextureRef.current;
+    ensureUniqueMaterial(mesh);
+    new THREE.TextureLoader().load(imageUrl, (t) => {
+      setupCocaParams(t);
+      setMapOnMesh(mesh, t);
+      sidePanel1TextureRef.current = t;
+      if (prevTex && prevTex !== t && prevTex.dispose) prevTex.dispose();
+    });
+  };
+  const resetSidePanel1 = () => {
+    const mesh = sidePanel1MeshRef.current;
+    if (!mesh) return;
+    if (sidePanel1TextureRef.current) { sidePanel1TextureRef.current.dispose(); sidePanel1TextureRef.current = null; }
+    if (mesh.userData?.originalMaterial) mesh.material = mesh.userData.originalMaterial.clone ? mesh.userData.originalMaterial.clone() : mesh.userData.originalMaterial;
+    mesh.userData._materialUnique = false;
+  };
+
+  const applySidePanel2Texture = (imageUrl) => {
+    if (!sidePanel2MeshRef.current) return;
+    const mesh = sidePanel2MeshRef.current;
+    const prevTex = sidePanel2TextureRef.current;
+    ensureUniqueMaterial(mesh);
+    new THREE.TextureLoader().load(imageUrl, (t) => {
+      setupCocaParams(t);
+      setMapOnMesh(mesh, t);
+      sidePanel2TextureRef.current = t;
+      if (prevTex && prevTex !== t && prevTex.dispose) prevTex.dispose();
+    });
+  };
+  const resetSidePanel2 = () => {
+    const mesh = sidePanel2MeshRef.current;
+    if (!mesh) return;
+    if (sidePanel2TextureRef.current) { sidePanel2TextureRef.current.dispose(); sidePanel2TextureRef.current = null; }
+    if (mesh.userData?.originalMaterial) mesh.material = mesh.userData.originalMaterial.clone ? mesh.userData.originalMaterial.clone() : mesh.userData.originalMaterial;
+    mesh.userData._materialUnique = false;
+  };
+
+  // --- Louver ---
+  const applyLouverTexture = (imageUrl) => {
+    if (!louverMeshRef.current) return;
+    if (louverTextureRef.current) { louverTextureRef.current.dispose(); louverTextureRef.current = null; }
+    ensureUniqueMaterial(louverMeshRef.current);
+    new THREE.TextureLoader().load(imageUrl, (t) => {
+      setupLouverParams(t);
+      setMapOnMesh(louverMeshRef.current, t);
+      louverTextureRef.current = t;
+      console.log("✅ Louver texture applied");
+    });
+  };
+  const resetLouver = () => {
+    const mesh = louverMeshRef.current;
+    if (!mesh) return;
+    if (louverTextureRef.current) { louverTextureRef.current.dispose(); louverTextureRef.current = null; }
+    if (mesh.userData?.originalMaterial) mesh.material = mesh.userData.originalMaterial.clone ? mesh.userData.originalMaterial.clone() : mesh.userData.originalMaterial;
+    mesh.userData._materialUnique = false;
+  };
+
+  // --- Colors ---
   const applyColor = (objName, color) => {
     if (!scene) return;
     const obj = scene.getObjectByName(objName);
@@ -151,156 +291,32 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
       }
     });
   };
-
-  // --- Canopy Branding ---
-  const applyCanopyTexture = (imageUrl) => {
-    if (!canopyMeshRef.current) return;
-
-    if (canopyTextureRef.current) {
-      canopyTextureRef.current.dispose();
-      canopyTextureRef.current = null;
-    }
-
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      const squeezeY = 0.4;
-      const newHeight = img.height * squeezeY;
-      const offsetY = (canvas.height - newHeight) / 2;
-
-      ctx.drawImage(img, 0, offsetY, canvas.width, newHeight);
-
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.encoding = THREE.sRGBEncoding;
-      tex.anisotropy = 16;
-      tex.flipY = false;
-
-      canopyMeshRef.current.material = new THREE.MeshStandardMaterial({
-        map: tex,
-        color: 0xffffff,
-        roughness: 0.3,
-        metalness: 0.2,
-        side: THREE.DoubleSide,
-      });
-
-      canopyTextureRef.current = tex;
-    };
-
-    img.crossOrigin = "anonymous";
-    img.src = imageUrl;
-  };
-
-  const resetCanopy = () => {
-    if (canopyMeshRef.current && canopyMeshRef.current.userData.originalMaterial) {
-      canopyMeshRef.current.material = canopyMeshRef.current.userData.originalMaterial;
-    }
-    if (canopyTextureRef.current) {
-      canopyTextureRef.current.dispose();
-      canopyTextureRef.current = null;
-    }
-  };
-
-  // --- Apply Side Panel 1 & 2 Texture ---
-  const applySidePanelTexture = (imageUrl) => {
-    const tex = new THREE.TextureLoader().load(
-      imageUrl,
-      (t) => {
-        t.encoding = THREE.sRGBEncoding;
-        t.anisotropy = 16;
-        t.flipY = false;
-        t.offset.y = -0.2;
-        t.center.set(0.5, 0.5);
-        t.rotation = Math.PI / 2;
-        t.repeat.set(0.85, 3);
-        t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
-
-        if (sidePanel1MeshRef.current) {
-          sidePanel1MeshRef.current.material = new THREE.MeshStandardMaterial({
-            map: t,
-            roughness: 0.4,
-            metalness: 0.1,
-            side: THREE.DoubleSide,
-          });
-          sidePanel1MeshRef.current.material.needsUpdate = true;
-          sidePanel1TextureRef.current = t;
-        }
-
-        if (sidePanel2MeshRef.current) {
-          sidePanel2MeshRef.current.material = new THREE.MeshStandardMaterial({
-            map: t,
-            roughness: 0.4,
-            metalness: 0.1,
-            side: THREE.DoubleSide,
-          });
-          sidePanel2MeshRef.current.material.needsUpdate = true;
-          sidePanel2TextureRef.current = t;
-        }
-
-        console.log("✅ Side panel 1 & 2 texture applied");
-      }
-    );
-  };
-
-  const resetSidePanel = () => {
-    if (sidePanel1MeshRef.current && sidePanel1OriginalMatRef.current) {
-      sidePanel1MeshRef.current.material = sidePanel1OriginalMatRef.current;
-    }
-    if (sidePanel2MeshRef.current && sidePanel2OriginalMatRef.current) {
-      sidePanel2MeshRef.current.material = sidePanel2OriginalMatRef.current;
-    }
-    if (sidePanel1TextureRef.current) sidePanel1TextureRef.current.dispose();
-    if (sidePanel2TextureRef.current) sidePanel2TextureRef.current.dispose();
-
-    sidePanel1TextureRef.current = null;
-    sidePanel2TextureRef.current = null;
-
-    console.log("♻️ Side panels reset");
-  };
-
-  // --- Colors ---
-  useEffect(() => {
-    ["Kanopiborder1","Kanopiborder2","Kanopiborder3","Kanopiborder4"].forEach(name => applyColor(name, canopyColor));
-  }, [canopyColor]);
-
-  useEffect(() => {
-    ["Bottomborder1","Bottomborder2"].forEach(name => applyColor(name, bottomBorderColor));
-  }, [bottomBorderColor]);
-
+  useEffect(() => { ["Kanopiborder1","Kanopiborder2","Kanopiborder3","Kanopiborder4"].forEach(n => applyColor(n, canopyColor)); }, [canopyColor]);
+  useEffect(() => { ["Bottomborder1","Bottomborder2"].forEach(n => applyColor(n, bottomBorderColor)); }, [bottomBorderColor]);
   useEffect(() => { if (doorRef.current) applyColor("Door", doorColor); }, [doorColor]);
- useEffect(() => {
-  ["Toppannel", "Back1", "Back2", "Back3", "Back4"].forEach((name) => {
-    applyColor(name, topPanelColor);
-  });
-}, [topPanelColor]);
+  useEffect(() => { ["Toppannel","Back1","Back2","Back3","Back4"].forEach(n => applyColor(n, topPanelColor)); }, [topPanelColor]);
 
-
-  // --- Scene Setup ---
+  // --- scene setup ---
   useEffect(() => {
     if (!scene || !threeScene) return;
     threeScene.background = null;
     scene.scale.set(2,2,2);
     scene.position.set(0.15,-1.1,-0.19);
     scene.traverse(c => { if (c.isMesh && c.name!=="Door") { c.castShadow = true; c.receiveShadow = true; } });
-    
     if (onAssetLoaded) onAssetLoaded();
   }, [scene, threeScene, onAssetLoaded]);
 
-  // --- Cleanup ---
+  // --- cleanup ---
   useEffect(() => {
     return () => {
       if (canopyTextureRef.current) canopyTextureRef.current.dispose();
       if (sidePanel1TextureRef.current) sidePanel1TextureRef.current.dispose();
       if (sidePanel2TextureRef.current) sidePanel2TextureRef.current.dispose();
+      if (louverTextureRef.current) louverTextureRef.current.dispose();
     };
   }, []);
 
+  // --- expose functions ---
   useImperativeHandle(ref, () => ({
     toggleLEDLight1001(visible) {
       if (ledLight1001Ref.current) ledLight1001Ref.current.visible = visible;
@@ -309,18 +325,17 @@ export const Experience = forwardRef(({ canopyColor, bottomBorderColor, doorColo
     },
     applyCanopyTexture,
     resetCanopy,
-    applySidePanelTexture,  // ✅ now applies to both panels
-    resetSidePanel
+    applySidePanel1Texture,
+    resetSidePanel1,
+    applySidePanel2Texture,
+    resetSidePanel2,
+    applyLouverTexture,
+    resetLouver
   }));
 
   return (
     <Suspense fallback={null}>
-      {!ledVisible && <Environment 
-        files="photo_studio_01_1k.hdr" 
-        background={false} 
-        intensity={1.2} 
-        onLoad={onAssetLoaded}
-      />}
+      {!ledVisible && <Environment files="photo_studio_01_1k.hdr" background={false} intensity={1.2} onLoad={onAssetLoaded} />}
       <mesh rotation={[-Math.PI/2,0,0]} position={[0,-1.3,0]} receiveShadow>
         <planeGeometry args={[1000,1000]} />
         <meshStandardMaterial color="#d8d8d8" roughness={0} metalness={0} visible={false}/>
