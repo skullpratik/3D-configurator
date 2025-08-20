@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useImperativeHandle, forwardRef, Suspense } from "react";
-import { useThree } from "@react-three/fiber";
+import React, { useEffect, useRef, useImperativeHandle, forwardRef, Suspense, useState } from "react";
+import { useThree, useFrame } from "@react-three/fiber";
 import { Environment, ContactShadows, OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import gsap from "gsap";
@@ -69,6 +69,9 @@ useGLTF.preload("/models/pra.glb");
 export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr", doorType = "solid" }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
   const { scene } = useGLTF("/models/pra.glb");
+  
+  const [position, setPosition] = useState(new THREE.Vector3(0.4, -0.836, 0));
+  const moveSpeed = 0.05;
 
   const allObjects = useRef({});
   const activeDrawers = useRef([]);
@@ -118,6 +121,7 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
     updateActiveObjects();
     updateLogoVisibility();
     lastSelectionRef.current = { doors: [], panels: [], drawers: [] };
+    setPosition(new THREE.Vector3(0.4, -0.836, 0));
   };
 
   // Helpers to apply materials
@@ -197,6 +201,42 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
     updateActiveObjects();
     updateLogoVisibility();
   }, [scene, threeScene]);
+
+  // Handle keyboard input for model movement
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const newPosition = position.clone();
+      
+      switch(e.key.toLowerCase()) {
+        case 'l': // Left
+          newPosition.x -= moveSpeed;
+          break;
+        case 'r': // Right
+          newPosition.x += moveSpeed;
+          break;
+        case 'u': // Up
+          newPosition.y += moveSpeed;
+          break;
+        case 'd': // Down
+          newPosition.y -= moveSpeed;
+          break;
+        default:
+          return;
+      }
+      
+      setPosition(newPosition);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [position]);
+
+  // Update scene position based on keyboard input
+  useFrame(() => {
+    if (scene) {
+      scene.position.copy(position);
+    }
+  });
 
   const handleClick = (event) => {
     if (!scene || !gl) return;

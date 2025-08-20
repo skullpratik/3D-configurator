@@ -14,7 +14,7 @@ export const Experience = forwardRef(({
   topPanelColor, 
   ledVisible, 
   louverColor, 
-  colorShading, // Add this prop
+  colorShading,
   onAssetLoaded 
 }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
@@ -47,6 +47,9 @@ export const Experience = forwardRef(({
   const sidePanel2TextureRef = useRef(null);
   const sidePanel2OriginalMatRef = useRef(null);
 
+  // Position ref for keyboard controls
+  const positionRef = useRef({ x: 0.15, y: -1.1, z: -0.19 });
+
   // --- helpers ---
   const setMapOnMesh = (mesh, tex) => {
     if (!mesh) return;
@@ -78,7 +81,7 @@ export const Experience = forwardRef(({
     if (!color) return null;
     const tc = tinycolor(color);
     return adjustment > 0 
-      ? tc.lighten(adjustment / 2).toHexString() // Divided by 2 to make adjustment less extreme
+      ? tc.lighten(adjustment / 2).toHexString()
       : tc.darken(-adjustment / 2).toHexString();
   };
 
@@ -131,7 +134,7 @@ export const Experience = forwardRef(({
     const pointLight = scene.getObjectByName("Point");
     if (pointLight) {
       pointLightRef.current = pointLight;
-      pointLightRef.current.intensity = 1.2;
+      pointLightRef.current.intensity = 2;
       pointLightRef.current.visible = false;
     }
 
@@ -161,12 +164,54 @@ export const Experience = forwardRef(({
     return () => gl.domElement.removeEventListener("click", handleClick);
   }, [scene, gl, camera]);
 
+useEffect(() => {
+  if (!ledLight1001Ref.current || !pointLightRef.current || !ambientLightRef.current) return;
+
+  ledLight1001Ref.current.visible = ledVisible;
+  pointLightRef.current.visible = ledVisible;
+  ambientLightRef.current.visible = ledVisible;
+
+  // 🔥 change background depending on LED state
+  if (threeScene) {
+    threeScene.background = ledVisible ? new THREE.Color(0x666666) : null;
+  }
+}, [ledVisible, threeScene]);
+
+
+  // --- Keyboard controls for model movement ---
   useEffect(() => {
-    if (!ledLight1001Ref.current || !pointLightRef.current || !ambientLightRef.current) return;
-    ledLight1001Ref.current.visible = ledVisible;
-    pointLightRef.current.visible = ledVisible;
-    ambientLightRef.current.visible = ledVisible;
-  }, [ledVisible]);
+    if (!scene) return;
+
+    const handleKeyDown = (e) => {
+      const step = 0.1;
+      
+      switch (e.key.toLowerCase()) {
+        case 'r':
+          positionRef.current.x += step;
+          break;
+        case 'l':
+          positionRef.current.x -= step;
+          break;
+        case 'u':
+          positionRef.current.y += step;
+          break;
+        case 'd':
+          positionRef.current.y -= step;
+          break;
+        default:
+          return;
+      }
+
+      // Apply the updated position
+      scene.position.set(positionRef.current.x, positionRef.current.y, positionRef.current.z);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [scene]);
 
   // --- Texture setup functions ---
   const setupCocaParams = (t) => {
@@ -381,9 +426,9 @@ export const Experience = forwardRef(({
   // --- scene setup ---
   useEffect(() => {
     if (!scene || !threeScene) return;
-    threeScene.background = null;
+    
     scene.scale.set(2,2,2);
-    scene.position.set(0.15,-1.1,-0.19);
+    scene.position.set(positionRef.current.x, positionRef.current.y, positionRef.current.z);
     scene.traverse(c => { if (c.isMesh && c.name!=="Door") { c.castShadow = true; c.receiveShadow = true; } });
     if (onAssetLoaded) onAssetLoaded();
   }, [scene, threeScene, onAssetLoaded]);
