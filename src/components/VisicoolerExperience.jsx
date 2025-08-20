@@ -134,7 +134,7 @@ export const Experience = forwardRef(({
     const pointLight = scene.getObjectByName("Point");
     if (pointLight) {
       pointLightRef.current = pointLight;
-      pointLightRef.current.intensity = 2;
+      pointLightRef.current.intensity = 2.5;
       pointLightRef.current.visible = false;
     }
 
