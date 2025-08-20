@@ -175,7 +175,28 @@ useEffect(() => {
   if (threeScene) {
     threeScene.background = ledVisible ? new THREE.Color(0x666666) : null;
   }
+
+  // 🌟 Make canopy glow when LED is on
+  if (canopyMeshRef.current) {
+    const materials = Array.isArray(canopyMeshRef.current.material)
+      ? canopyMeshRef.current.material
+      : [canopyMeshRef.current.material];
+
+    materials.forEach(mat => {
+      if (mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial) {
+        // if a texture already applied, use it as emissive map
+        if (mat.map) {
+          mat.emissiveMap = mat.map;
+        }
+        mat.emissive = ledVisible ? new THREE.Color(0xffffff) : new THREE.Color(0x000000);
+        mat.emissiveIntensity = ledVisible ? 1.2 : 0.0; // tweak intensity
+        mat.needsUpdate = true;
+      }
+    });
+  }
 }, [ledVisible, threeScene]);
+
+
 
 
   // --- Keyboard controls for model movement ---

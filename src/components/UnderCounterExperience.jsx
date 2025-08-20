@@ -343,6 +343,7 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
         <meshStandardMaterial color="#d8d8d8" roughness={0} metalness={0} visible={false} />
       </mesh>
       <ContactShadows position={[-0.02, -0.9, 0]} opacity={1.1} scale={19} blur={2.5} far={20} />
+      
       <OrbitControls
         enableDamping
         dampingFactor={0.12}
