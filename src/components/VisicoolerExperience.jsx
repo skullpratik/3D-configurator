@@ -5,7 +5,7 @@ import * as THREE from "three";
 import gsap from "gsap";
 import tinycolor from "tinycolor2";
 
-useGLTF.preload("/models/UV.glb");
+useGLTF.preload("/models/Visicooler.glb");
 
 export const Experience = forwardRef(({ 
   canopyColor, 
@@ -18,7 +18,7 @@ export const Experience = forwardRef(({
   onAssetLoaded 
 }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/UV.glb", undefined, undefined, () => {
+  const { scene } = useGLTF("/models/Visicooler.glb", undefined, undefined, () => {
     if (onAssetLoaded) onAssetLoaded();
   });
 

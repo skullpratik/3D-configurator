@@ -71,7 +71,7 @@ function CanvasContent({
   ledEnabled,
   louverColor,
   onAssetLoaded,
-  colorShading
+  colorShading,
 }) {
   switch (modelType) {
     case "undercounter":
@@ -109,7 +109,6 @@ function CanvasContent({
           metalness={materialProps.metalness}
           roughness={materialProps.roughness}
           lightSettings={lightSettings}
-          ledEnabled={ledEnabled}
           onAssetLoaded={onAssetLoaded}
         />
       );
@@ -132,9 +131,8 @@ export default function App() {
     ledVisible: false,
   });
   const [doorType, setDoorType] = useState("solid");
-  const [ledEnabled, setLedEnabled] = useState(true);
 
- const [canopyColor, setCanopyColor] = useState(null);
+  const [canopyColor, setCanopyColor] = useState(null);
   const [bottomBorderColor, setBottomBorderColor] = useState(null);
   const [doorColor, setDoorColor] = useState(null);
   const [topPanelColor, setTopPanelColor] = useState(null);
@@ -144,7 +142,7 @@ export default function App() {
     bottom: 0,
     door: 0,
     toppanel: 0,
-    louver: 0
+    louver: 0,
   });
 
   // Loading state
@@ -202,12 +200,16 @@ export default function App() {
     }
   };
 
-  if (isLoading) {
-    return <Loader progress={loadingProgress} />;
-  }
-
   return (
-    <Box sx={{ display: "flex", height: "100vh", width: "100vw", opacity: loadingProgress === 100 ? 1 : 0, transition: "opacity 0.5s ease-in-out" }}>
+    <Box
+      sx={{
+        display: "flex",
+        height: "100vh",
+        width: "100vw",
+        opacity: loadingProgress === 100 ? 1 : 0,
+        transition: "opacity 0.5s ease-in-out",
+      }}
+    >
       <Paper
         elevation={3}
         sx={{
@@ -232,7 +234,10 @@ export default function App() {
             borderRadius: "12px 12px 0 0",
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#f28315", userSelect: "none", letterSpacing: 1 }}>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 700, color: "#f28315", userSelect: "none", letterSpacing: 1 }}
+          >
             Cabinet Configurator
           </Typography>
 
@@ -282,61 +287,37 @@ export default function App() {
               onLouverColorChange={setLouverColor}
               louverColor={louverColor}
               onColorShadingChange={setColorShading}
-
-              onCanopyTextureUpload={(imageUrl) => {
-                if (visiCoolerRef.current?.applyCanopyTexture) {
-                  visiCoolerRef.current.applyCanopyTexture(imageUrl);
-                }
-              }}
-              onCanopyTextureReset={() => {
-                if (visiCoolerRef.current?.resetCanopy) {
-                  visiCoolerRef.current.resetCanopy();
-                }
-              }}
-
-              onSidePanel1TextureUpload={(imageUrl) => {
-                if (visiCoolerRef.current?.applySidePanel1Texture) {
-                  visiCoolerRef.current.applySidePanel1Texture(imageUrl);
-                }
-              }}
-              onSidePanel1TextureReset={() => {
-                if (visiCoolerRef.current?.resetSidePanel1) {
-                  visiCoolerRef.current.resetSidePanel1();
-                }
-              }}
-
-              onSidePanel2TextureUpload={(imageUrl) => {
-                if (visiCoolerRef.current?.applySidePanel2Texture) {
-                  visiCoolerRef.current.applySidePanel2Texture(imageUrl);
-                }
-              }}
-              onSidePanel2TextureReset={() => {
-                if (visiCoolerRef.current?.resetSidePanel2) {
-                  visiCoolerRef.current.resetSidePanel2();
-                }
-              }}
-              onLouverTextureUpload={(url) => {
-                if (visiCoolerRef.current?.applyLouverTexture) visiCoolerRef.current.applyLouverTexture(url);
-              }}
-              onLouverTextureReset={() => {
-                if (visiCoolerRef.current?.resetLouver) visiCoolerRef.current.resetLouver();
-              }}
+              onCanopyTextureUpload={(url) => visiCoolerRef.current?.applyCanopyTexture(url)}
+              onCanopyTextureReset={() => visiCoolerRef.current?.resetCanopy()}
+              onSidePanel1TextureUpload={(url) => visiCoolerRef.current?.applySidePanel1Texture(url)}
+              onSidePanel1TextureReset={() => visiCoolerRef.current?.resetSidePanel1()}
+              onSidePanel2TextureUpload={(url) => visiCoolerRef.current?.applySidePanel2Texture(url)}
+              onSidePanel2TextureReset={() => visiCoolerRef.current?.resetSidePanel2()}
+              onLouverTextureUpload={(url) => visiCoolerRef.current?.applyLouverTexture(url)}
+              onLouverTextureReset={() => visiCoolerRef.current?.resetLouver()}
             />
           )}
 
           {modelType === "deepfridge" && (
             <DeepFridgeInterface
-              onDoorChange={handleDoorChange}
               onMaterialChange={handleMaterialChange}
-              onLightChange={() => {}}
-              onLEDToggle={setLedEnabled}
+              onFrontTextureUpload={(url) => deepFridgeRef.current?.applyFrontTexture(url)}
+              onFrontTextureReset={() => deepFridgeRef.current?.resetFront()}
+              onLeftTextureUpload={(url) => deepFridgeRef.current?.applyLeftTexture(url)}
+              onLeftTextureReset={() => deepFridgeRef.current?.resetLeft()}
+              onRightTextureUpload={(url) => deepFridgeRef.current?.applyRightTexture(url)}
+              onRightTextureReset={() => deepFridgeRef.current?.resetRight()}
             />
           )}
         </Box>
       </Paper>
 
       <Box sx={{ flex: 1, position: "relative" }}>
-        <Canvas shadows camera={{ position: [4, 4, 8], fov: 35 }} gl={{ preserveDrawingBuffer: true }}>
+        <Canvas
+          shadows
+          camera={{ position: [4, 4, 8], fov: 35 }}
+          gl={{ preserveDrawingBuffer: true }}
+        >
           <GLProvider setGL={setGL} />
           <CanvasContent
             modelType={modelType}
@@ -353,10 +334,8 @@ export default function App() {
             topPanelColor={topPanelColor}
             louverColor={louverColor}
             colorShading={colorShading}
-            ledEnabled={ledEnabled}
+            ledEnabled={false}
             onAssetLoaded={handleAssetLoaded}
-            
-            
           />
         </Canvas>
         <DownloadButton gl={gl} disabled={isLoading} />
