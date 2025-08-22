@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useImperativeHandle, forwardRef, Suspense } from "react";
-import { useThree } from "@react-three/fiber";
+import { useThree, useFrame } from "@react-three/fiber";
 import { Environment, ContactShadows, OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import gsap from "gsap";
@@ -15,7 +15,8 @@ export const Experience = forwardRef(({
   ledVisible, 
   louverColor, 
   colorShading,
-  onAssetLoaded 
+  onAssetLoaded,
+  onARStatusChange
 }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
   const { scene } = useGLTF("/models/Visicooler.glb", undefined, undefined, () => {
@@ -49,6 +50,13 @@ export const Experience = forwardRef(({
 
   // Position ref for keyboard controls
   const positionRef = useRef({ x: 0.15, y: -1.1, z: -0.19 });
+
+  // --- AR refs/state ---
+  const isARActiveRef = useRef(false);
+  const reticleRef = useRef(null);
+  const hitTestSourceRef = useRef(null);
+  const viewerSpaceRef = useRef(null);
+  const cleanupARRef = useRef(null);
 
   // --- helpers ---
   const setMapOnMesh = (mesh, tex) => {
@@ -144,6 +152,7 @@ export const Experience = forwardRef(({
     ambientLightRef.current = ambient;
 
     const handleClick = (event) => {
+      if (isARActiveRef.current) return; // disable model door toggle during AR
       const rect = gl.domElement.getBoundingClientRect();
       mouse.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -195,7 +204,6 @@ useEffect(() => {
     });
   }
 }, [ledVisible, threeScene]);
-
 
 
 
@@ -454,6 +462,45 @@ useEffect(() => {
     if (onAssetLoaded) onAssetLoaded();
   }, [scene, threeScene, onAssetLoaded]);
 
+  // --- AR: create reticle and frame loop ---
+  useEffect(() => {
+    if (!threeScene) return;
+    const geom = new THREE.RingGeometry(0.12, 0.15, 32).rotateX(-Math.PI/2);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
+    const reticle = new THREE.Mesh(geom, mat);
+    reticle.matrixAutoUpdate = false;
+    reticle.visible = false;
+    threeScene.add(reticle);
+    reticleRef.current = reticle;
+    return () => {
+      if (reticle) {
+        threeScene.remove(reticle);
+        geom.dispose();
+        mat.dispose();
+      }
+    };
+  }, [threeScene]);
+
+  useFrame((state, _, frame) => {
+    if (!isARActiveRef.current || !frame) return;
+    const session = state.gl.xr.getSession();
+    if (!session) return;
+    if (!hitTestSourceRef.current || !viewerSpaceRef.current) return;
+
+    const hitTestResults = frame.getHitTestResults(hitTestSourceRef.current);
+    const referenceSpace = state.gl.xr.getReferenceSpace();
+
+    if (hitTestResults.length > 0 && referenceSpace) {
+      const pose = hitTestResults[0].getPose(referenceSpace);
+      if (pose && reticleRef.current) {
+        reticleRef.current.visible = true;
+        reticleRef.current.matrix.fromArray(pose.transform.matrix);
+      }
+    } else {
+      if (reticleRef.current) reticleRef.current.visible = false;
+    }
+  });
+
   // --- cleanup ---
   useEffect(() => {
     return () => {
@@ -461,8 +508,89 @@ useEffect(() => {
       if (sidePanel1TextureRef.current) sidePanel1TextureRef.current.dispose();
       if (sidePanel2TextureRef.current) sidePanel2TextureRef.current.dispose();
       if (louverTextureRef.current) louverTextureRef.current.dispose();
+      if (cleanupARRef.current) cleanupARRef.current();
     };
   }, []);
+
+  const enterAR = async () => {
+    try {
+      if (!navigator.xr) {
+        console.warn("WebXR not available");
+        return false;
+      }
+
+      const supported = await navigator.xr.isSessionSupported?.("immersive-ar");
+      if (!supported) {
+        console.warn("AR session not supported");
+        return false;
+      }
+
+      gl.xr.enabled = true;
+      const sessionInit = { requiredFeatures: ["hit-test", "local-floor"], optionalFeatures: ["dom-overlay"], domOverlay: { root: document.body } };
+      const session = await navigator.xr.requestSession("immersive-ar", sessionInit).catch(async () => {
+        // retry without dom-overlay if it fails
+        return navigator.xr.requestSession("immersive-ar", { requiredFeatures: ["hit-test", "local-floor"] });
+      });
+
+      await gl.xr.setSession(session);
+      const refSpace = await session.requestReferenceSpace("local-floor").catch(() => session.requestReferenceSpace("local"));
+      const viewerSpace = await session.requestReferenceSpace("viewer");
+      const hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
+
+      viewerSpaceRef.current = viewerSpace;
+      hitTestSourceRef.current = hitTestSource;
+      isARActiveRef.current = true;
+      if (onARStatusChange) onARStatusChange(true);
+
+      const onSelect = () => {
+        if (!reticleRef.current || !reticleRef.current.visible || !scene) return;
+        const m = new THREE.Matrix4();
+        m.copy(reticleRef.current.matrix);
+        const pos = new THREE.Vector3();
+        const quat = new THREE.Quaternion();
+        const scl = new THREE.Vector3();
+        m.decompose(pos, quat, scl);
+        scene.position.copy(pos);
+        scene.quaternion.copy(quat);
+      };
+      session.addEventListener("select", onSelect);
+
+      const onEnd = () => {
+        isARActiveRef.current = false;
+        if (onARStatusChange) onARStatusChange(false);
+        if (reticleRef.current) reticleRef.current.visible = false;
+        hitTestSourceRef.current?.cancel?.();
+        hitTestSourceRef.current = null;
+        viewerSpaceRef.current = null;
+      };
+      session.addEventListener("end", onEnd);
+
+      cleanupARRef.current = () => {
+        try { session.removeEventListener("select", onSelect); } catch {}
+        try { session.removeEventListener("end", onEnd); } catch {}
+        try { session.end(); } catch {}
+      };
+
+      return true;
+    } catch (e) {
+      console.error("Failed to start AR:", e);
+      return false;
+    }
+  };
+
+  const exitAR = async () => {
+    const session = gl.xr.getSession();
+    if (session) {
+      try {
+        await session.end();
+      } catch (e) {
+        console.warn("Ending AR session failed", e);
+      }
+    }
+    isARActiveRef.current = false;
+    if (onARStatusChange) onARStatusChange(false);
+    if (reticleRef.current) reticleRef.current.visible = false;
+  };
 
   // --- expose functions ---
   useImperativeHandle(ref, () => ({
@@ -478,18 +606,24 @@ useEffect(() => {
     applySidePanel2Texture,
     resetSidePanel2,
     applyLouverTexture,
-    resetLouver
+    resetLouver,
+    enterAR,
+    exitAR
   }));
+
+  const isARPresenting = !!gl.xr?.isPresenting;
 
   return (
     <Suspense fallback={null}>
-      {!ledVisible && <Environment files="photo_studio_01_1k.hdr" background={false} intensity={1.2} onLoad={onAssetLoaded} />}
-      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-1.3,0]} receiveShadow>
-        <planeGeometry args={[1000,1000]} />
-        <meshStandardMaterial color="#d8d8d8" roughness={0} metalness={0} visible={false}/>
-      </mesh>
-      <ContactShadows position={[0,-1.42,0]} opacity={1.5} scale={15} blur={2.5} far={10} />
-      <OrbitControls enableDamping dampingFactor={0.12} rotateSpeed={1.1} zoomSpeed={1} panSpeed={0.8} enablePan minDistance={2.5} maxDistance={20} minPolarAngle={Math.PI/6} maxPolarAngle={Math.PI/2.05} target={[0,0.5,0]} makeDefault />
+      {!ledVisible && !isARPresenting && <Environment files="photo_studio_01_1k.hdr" background={false} intensity={1.2} onLoad={onAssetLoaded} />}
+      {!isARPresenting && (
+        <mesh rotation={[-Math.PI/2,0,0]} position={[0,-1.3,0]} receiveShadow>
+          <planeGeometry args={[1000,1000]} />
+          <meshStandardMaterial color="#d8d8d8" roughness={0} metalness={0} visible={false}/>
+        </mesh>
+      )}
+      {!isARPresenting && <ContactShadows position={[0,-1.42,0]} opacity={1.5} scale={15} blur={2.5} far={10} />}
+      {!isARPresenting && <OrbitControls enableDamping dampingFactor={0.12} rotateSpeed={1.1} zoomSpeed={1} panSpeed={0.8} enablePan minDistance={2.5} maxDistance={20} minPolarAngle={Math.PI/6} maxPolarAngle={Math.PI/2.05} target={[0,0.5,0]} makeDefault />}
       {scene && <primitive object={scene} />}
     </Suspense>
   );

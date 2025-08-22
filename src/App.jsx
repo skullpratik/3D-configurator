@@ -54,6 +54,33 @@ function DownloadButton({ gl, disabled }) {
   );
 }
 
+// AR Toggle Button
+function ARButton({ visible, onEnter, onExit, isActive, disabled }) {
+  if (!visible) return null;
+  return (
+    <button
+      onClick={isActive ? onExit : onEnter}
+      disabled={disabled}
+      style={{
+        position: "fixed",
+        bottom: 20,
+        right: 20,
+        padding: "10px 16px",
+        backgroundColor: isActive ? "#d9534f" : "#28a745",
+        border: "none",
+        borderRadius: 8,
+        color: "white",
+        fontSize: 16,
+        cursor: disabled ? "not-allowed" : "pointer",
+        zIndex: 10000,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+      }}
+    >
+      {isActive ? "Exit AR" : "Enter AR"}
+    </button>
+  );
+}
+
 // Canvas content
 function CanvasContent({
   modelType,
@@ -72,6 +99,7 @@ function CanvasContent({
   louverColor,
   onAssetLoaded,
   colorShading,
+  onARStatusChange
 }) {
   switch (modelType) {
     case "undercounter":
@@ -100,6 +128,7 @@ function CanvasContent({
           louverColor={louverColor}
           onAssetLoaded={onAssetLoaded}
           colorShading={colorShading}
+          onARStatusChange={onARStatusChange}
         />
       );
     case "deepfridge":
@@ -151,6 +180,8 @@ export default function App() {
   const [loadedAssets, setLoadedAssets] = useState(0);
   const totalAssets = 2; // Model + environment
 
+  const [isARActive, setIsARActive] = useState(false);
+
   const handleAssetLoaded = () => {
     setLoadedAssets((prev) => {
       const newValue = prev + 1;
@@ -198,6 +229,16 @@ export default function App() {
     if (visiCoolerRef.current?.toggleLEDLight1001) {
       visiCoolerRef.current.toggleLEDLight1001(visible);
     }
+  };
+
+  const enterAR = async () => {
+    if (modelType !== "visicooler") return;
+    const ok = await visiCoolerRef.current?.enterAR?.();
+    if (ok) setIsARActive(true);
+  };
+  const exitAR = async () => {
+    await visiCoolerRef.current?.exitAR?.();
+    setIsARActive(false);
   };
 
   return (
@@ -336,9 +377,17 @@ export default function App() {
             colorShading={colorShading}
             ledEnabled={false}
             onAssetLoaded={handleAssetLoaded}
+            onARStatusChange={setIsARActive}
           />
         </Canvas>
         <DownloadButton gl={gl} disabled={isLoading} />
+        <ARButton
+          visible={modelType === "visicooler"}
+          onEnter={enterAR}
+          onExit={exitAR}
+          isActive={isARActive}
+          disabled={isLoading}
+        />
       </Box>
     </Box>
   );
