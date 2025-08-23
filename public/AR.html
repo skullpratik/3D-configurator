@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -41,11 +40,6 @@ button {
   width: 200px;
   height: 200px;
 }
-#hidden-qr { /* Offscreen container for QR generation */
-  position: absolute;
-  top: -9999px;
-  left: -9999px;
-}
 </style>
 </head>
 <body>
@@ -54,7 +48,7 @@ button {
 <button id="arButton">👓 View in AR</button>
 
 <!-- Hidden iOS link for Quick Look -->
-<a id="iosLink" rel="ar" href="https://3d.tikitech.in/uv.usdz" style="display:none;"></a>
+<a id="iosLink" rel="ar" href="https://3d.tikitech.in/models/Worker_12.usdz" style="display:none;"></a>
 
 <!-- QR Code Modal -->
 <div id="qr-modal">
@@ -66,47 +60,42 @@ button {
   </div>
 </div>
 
-<!-- Offscreen QR generation container -->
-<div id="hidden-qr"></div>
-
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 <script>
+const glbUrl = "/Visicooler.glb";   // Android
+const usdzUrl = "Visicooler.usdz"; // iOS
+
+const ua = navigator.userAgent || "";
+const isIOS = /iPad|iPhone|iPod/.test(ua);
+const isAndroid = /Android/.test(ua);
+
 const arButton = document.getElementById('arButton');
-const qrModal = document.getElementById('qr-modal');
-const closeQr = document.getElementById('closeQr');
-const qrcodeEl = document.getElementById('qrcode');
-const hiddenQr = document.getElementById('hidden-qr');
 const iosLink = document.getElementById('iosLink');
+const qrModal = document.getElementById('qr-modal');
+const qrcodeEl = document.getElementById('qrcode');
+const closeQr = document.getElementById('closeQr');
 
-const glbUrl = "/model/uv.glb";   // Android
-const usdzUrl = "https://3d.tikitech.in/uv.usdz"; // iOS
+// ✅ Auto-redirect if the page is opened on a mobile device directly
+if (isIOS) {
+  window.location.href = usdzUrl;
+} else if (isAndroid) {
+  const sceneUrl = `https://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(glbUrl)}&mode=ar_preferred`;
+  window.location.href = sceneUrl;
+}
 
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-const isAndroid = /Android/.test(navigator.userAgent);
-
-// Pre-generate QR code pointing directly to model files
-const qrLink = (navigator.userAgent.match(/iPad|iPhone|iPod/)) ? usdzUrl : glbUrl;
-// QR points to the launcher page instead of raw model
-QRCode.toDataURL("https://3d.tikitech.in/ar-qr.html")
-  .then(url => {
-    const img = document.createElement('img');
-    img.src = url;
-    hiddenQr.appendChild(img);
-  })
-  .catch(err => console.error(err));
-
+// ✅ On button click
 arButton.addEventListener('click', () => {
   if (isIOS) {
-    iosLink.click();
+    iosLink.click();  // Quick Look
   } else if (isAndroid) {
     const sceneViewerUrl = `https://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(glbUrl)}&mode=ar_preferred`;
     window.location.href = sceneViewerUrl;
   } else {
-    // Desktop → show QR code
+    // Desktop → show QR
     qrModal.style.display = 'flex';
-    qrcodeEl.innerHTML = ''; // clear previous QR
-    // Generate QR code every time
-    QRCode.toDataURL("https://3d.tikitech.in/ar-qr.html")
+    qrcodeEl.innerHTML = '';
+    // QR points back to THIS SAME PAGE
+    QRCode.toDataURL(window.location.href)
       .then(url => {
         const img = document.createElement('img');
         img.src = url;
@@ -116,6 +105,7 @@ arButton.addEventListener('click', () => {
   }
 });
 
+// ✅ Close QR modal
 closeQr.addEventListener('click', () => {
   qrModal.style.display = 'none';
 });
