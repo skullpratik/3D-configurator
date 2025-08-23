@@ -1,125 +1,198 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>AR Viewer</title>
 <style>
-body {
-  font-family: sans-serif;
-  text-align: center;
-  padding: 50px;
-}
-button {
-  padding: 12px 20px;
-  font-size: 18px;
-  background: #0077ff;
-  color: #fff;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-}
-#qr-modal {
-  display:none;
-  position: fixed;
-  top:0; left:0; right:0; bottom:0;
-  background: rgba(0,0,0,0.7);
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  z-index: 1000;
-}
-#qr-box {
-  background:#fff;
-  padding: 20px;
-  border-radius: 10px;
-  text-align: center;
-}
-#qr-box img {
-  margin-top: 10px;
-  width: 200px;
-  height: 200px;
-}
-#hidden-qr { /* Offscreen container for QR generation */
-  position: absolute;
-  top: -9999px;
-  left: -9999px;
-}
+  :root{--bg:rgba(0,0,0,.72);--card:#fff}
+  html,body{height:100%;margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial}
+  .page {
+    min-height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px;
+    box-sizing:border-box;
+    text-align:center;
+  }
+  h1{margin:0 0 18px;font-size:20px}
+  p.small{margin:6px 0 18px;color:#555;font-size:14px}
+  /* modal */
+  #qr-modal{display:none;position:fixed;inset:0;background:var(--bg);z-index:1000;align-items:center;justify-content:center;padding:20px}
+  #qr-box{background:var(--card);padding:18px;border-radius:12px;max-width:380px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.25);text-align:center}
+  #qr-box h2{margin:0 0 12px;font-size:18px}
+  #qr-holder{display:flex;flex-direction:column;align-items:center;gap:12px}
+  #qrcode img{width:220px;height:220px;object-fit:contain}
+  .btn-row{display:flex;gap:10px;justify-content:center;margin-top:6px;flex-wrap:wrap}
+  button, a.btn { appearance:none; border:0; padding:10px 12px; border-radius:8px; cursor:pointer; font-weight:600; text-decoration:none; background:#0077ff; color:#fff; }
+  a.secondary { background:#f2f4f7; color:#111; border:1px solid #e5e7eb; }
+  .meta { font-size:13px;color:#444;margin-top:8px }
+  .links{display:flex;gap:8px;flex-direction:column;align-items:center;margin-top:6px}
+  .small-note{font-size:12px;color:#666;margin-top:8px}
 </style>
 </head>
 <body>
-
-<h1>View in AR</h1>
-<button id="arButton">👓 View in AR</button>
-
-<!-- Hidden iOS link for Quick Look -->
-<a id="iosLink" rel="ar" href="https://3d.tikitech.in/uv.usdz" style="display:none;"></a>
-
-<!-- QR Code Modal -->
-<div id="qr-modal">
-  <div id="qr-box">
-    <h2>Scan to open AR on your mobile</h2>
-    <div id="qrcode"></div>
-    <br>
-    <button id="closeQr">Close</button>
+  <div class="page">
+    <div>
+      <h1>AR Viewer</h1>
+      <p class="small">This page will open AR automatically on mobile. If you're on desktop, scan the QR.</p>
+    </div>
   </div>
-</div>
 
-<!-- Offscreen QR generation container -->
-<div id="hidden-qr"></div>
+  <!-- iOS quick look anchor (hidden) -->
+  <a id="iosLink" rel="ar" href="#" style="display:none"></a>
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-<script>
-const arButton = document.getElementById('arButton');
-const qrModal = document.getElementById('qr-modal');
-const closeQr = document.getElementById('closeQr');
-const qrcodeEl = document.getElementById('qrcode');
-const hiddenQr = document.getElementById('hidden-qr');
-const iosLink = document.getElementById('iosLink');
+  <!-- QR Modal (appears on desktop or as fallback) -->
+  <div id="qr-modal" role="dialog" aria-modal="true" aria-labelledby="qr-title">
+    <div id="qr-box">
+      <h2 id="qr-title">Scan to open AR on your phone</h2>
+      <div id="qr-holder">
+        <div id="qrcode" aria-hidden="true">Generating…</div>
+        <div class="meta">Or open directly on this device:</div>
+        <div class="links" id="deviceLinks">
+          <!-- populated by JS -->
+        </div>
 
-const glbUrl = "https://3d.tikitech.in/uv.glb";   // Android
-const usdzUrl = "https://3d.tikitech.in/uv.usdz"; // iOS
+        <div class="btn-row">
+          <button id="copyLink" class="secondary">Copy link</button>
+          <button id="closeQr" class="secondary">Close</button>
+        </div>
 
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-const isAndroid = /Android/.test(navigator.userAgent);
+        <div class="small-note">If AR didn't open automatically on your phone, use the buttons above or scan the QR code.</div>
+      </div>
+    </div>
+  </div>
 
-// Pre-generate QR code pointing directly to model files
-const qrLink = (navigator.userAgent.match(/iPad|iPhone|iPod/)) ? usdzUrl : glbUrl;
-// QR points to the launcher page instead of raw model
-QRCode.toDataURL("https://3d.tikitech.in/ar-qr.html")
-  .then(url => {
-    const img = document.createElement('img');
-    img.src = url;
-    hiddenQr.appendChild(img);
-  })
-  .catch(err => console.error(err));
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script>
+    // ====== CONFIG ======
+    const glbUrl  = "https://3d.tikitech.in/uv.glb";   // Android model URL
+    const usdzUrl = "https://3d.tikitech.in/uv.usdz";  // iOS model URL
+    const launcherUrl = "https://3d.tikitech.in/ar-qr.html"; // page the QR points to (launcher)
+    const modelTitle = "3D Model";
 
-arButton.addEventListener('click', () => {
-  if (isIOS) {
-    iosLink.click();
-  } else if (isAndroid) {
-    const sceneViewerUrl = `https://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(glbUrl)}&mode=ar_preferred`;
-    window.location.href = sceneViewerUrl;
-  } else {
-    // Desktop → show QR code
-    qrModal.style.display = 'flex';
-    qrcodeEl.innerHTML = ''; // clear previous QR
-    // Generate QR code every time
-    QRCode.toDataURL("https://3d.tikitech.in/ar-qr.html")
-      .then(url => {
-        const img = document.createElement('img');
-        img.src = url;
-        qrcodeEl.appendChild(img);
-      })
-      .catch(err => console.error(err));
-  }
-});
+    // ====== UA detection (incl. iPadOS trick) ======
+    const ua = navigator.userAgent || "";
+    const isAndroid = /Android/i.test(ua);
+    const isIOS = /iPhone|iPod|iPad/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-closeQr.addEventListener('click', () => {
-  qrModal.style.display = 'none';
-});
-</script>
+    // DOM
+    const iosLink = document.getElementById('iosLink');
+    const qrModal = document.getElementById('qr-modal');
+    const qrcodeEl = document.getElementById('qrcode');
+    const deviceLinks = document.getElementById('deviceLinks');
+    const closeQr = document.getElementById('closeQr');
+    const copyLinkBtn = document.getElementById('copyLink');
 
+    // Helper to open Android Scene Viewer
+    function openSceneViewer(url) {
+      // Scene viewer URL; mode=ar_preferred asks for AR
+      const sceneViewerUrl = `https://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(url)}&mode=ar_preferred&title=${encodeURIComponent(modelTitle)}`;
+      window.location.href = sceneViewerUrl;
+    }
+
+    // Show the QR modal and generate QR image
+    function showQrModal() {
+      qrModal.style.display = "flex";
+      qrcodeEl.innerHTML = "";
+      // generate QR pointing to the launcher page (you can change to point to glb/usdz directly)
+      QRCode.toDataURL(launcherUrl, { margin:1, width:400 })
+        .then(dataUrl => {
+          const img = document.createElement('img');
+          img.alt = "QR code to open AR";
+          img.src = dataUrl;
+          qrcodeEl.appendChild(img);
+        })
+        .catch(err => {
+          qrcodeEl.textContent = "QR generation failed";
+          console.error(err);
+        });
+
+      // populate device direct links (fallbacks)
+      deviceLinks.innerHTML = "";
+
+      // iOS quick look fallback link
+      const aIos = document.createElement('a');
+      aIos.className = "btn";
+      aIos.href = usdzUrl;
+      aIos.rel = "ar";
+      aIos.textContent = "Open Quick Look (iOS)";
+      aIos.style.display = isIOS ? "inline-block" : "none";
+      deviceLinks.appendChild(aIos);
+
+      // Android scene viewer fallback link
+      const aAnd = document.createElement('a');
+      aAnd.className = "btn";
+      aAnd.href = `https://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(glbUrl)}&mode=ar_preferred&title=${encodeURIComponent(modelTitle)}`;
+      aAnd.textContent = "Open in Scene Viewer (Android)";
+      aAnd.style.display = isAndroid ? "inline-block" : "none";
+      deviceLinks.appendChild(aAnd);
+
+      // Generic link (in case UA detection is wrong)
+      const aGeneric = document.createElement('a');
+      aGeneric.className = "btn secondary";
+      aGeneric.href = launcherUrl;
+      aGeneric.textContent = "Open link";
+      deviceLinks.appendChild(aGeneric);
+    }
+
+    // Close modal handlers
+    closeQr.addEventListener('click', ()=> qrModal.style.display = "none");
+    qrModal.addEventListener('click', (ev)=> {
+      if (ev.target === qrModal) qrModal.style.display = "none";
+    });
+
+    // copy link
+    copyLinkBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(launcherUrl);
+        copyLinkBtn.textContent = "Copied!";
+        setTimeout(()=> copyLinkBtn.textContent = "Copy link", 1400);
+      } catch (e) {
+        copyLinkBtn.textContent = "Copy failed";
+        setTimeout(()=> copyLinkBtn.textContent = "Copy link", 1400);
+      }
+    });
+
+    // ====== Main on-load behavior ======
+    window.addEventListener('load', () => {
+      // If iOS -> attempt Quick Look by clicking hidden anchor
+      if (isIOS) {
+        iosLink.href = usdzUrl;
+        // Try programmatic click — many iOS browsers accept this
+        try {
+          iosLink.click();
+          // If user is on iOS but auto-open didn't work (some browsers block), show modal as fallback
+          // We show modal after a short delay so the user isn't interrupted on successful Quick Look
+          setTimeout(() => {
+            // If document is still visible (Quick Look didn't take over) -> show modal
+            if (!document.hidden) showQrModal();
+          }, 900);
+        } catch (e) {
+          // fallback: show modal immediately
+          showQrModal();
+        }
+        return;
+      }
+
+      // If Android -> redirect to Scene Viewer
+      if (isAndroid) {
+        try {
+          openSceneViewer(glbUrl);
+          // as with iOS, provide fallback modal after short delay if redirect didn't happen
+          setTimeout(() => {
+            if (!document.hidden) showQrModal();
+          }, 900);
+        } catch (e) {
+          showQrModal();
+        }
+        return;
+      }
+
+      // Not mobile => desktop: show QR right away
+      showQrModal();
+    });
+  </script>
 </body>
 </html>
