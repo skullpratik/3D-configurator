@@ -18,9 +18,7 @@ export const Experience = forwardRef(({
   onAssetLoaded 
 }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/Visicooler.glb", undefined, undefined, () => {
-    if (onAssetLoaded) onAssetLoaded();
-  });
+  const { scene } = useGLTF("/models/Visicooler.glb");
 
   // --- refs ---
   const doorRef = useRef();
