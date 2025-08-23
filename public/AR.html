@@ -78,7 +78,7 @@ const qrcodeEl = document.getElementById('qrcode');
 const hiddenQr = document.getElementById('hidden-qr');
 const iosLink = document.getElementById('iosLink');
 
-const glbUrl = "/model/uv.glb";   // Android
+const glbUrl = "/model/Visicooler.glb";   // Android
 const usdzUrl = "https://3d.tikitech.in/uv.usdz"; // iOS
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -87,7 +87,7 @@ const isAndroid = /Android/.test(navigator.userAgent);
 // Pre-generate QR code pointing directly to model files
 const qrLink = (navigator.userAgent.match(/iPad|iPhone|iPod/)) ? usdzUrl : glbUrl;
 // QR points to the launcher page instead of raw model
-QRCode.toDataURL("https://3d.tikitech.in/ar-qr.html")
+QRCode.toDataURL("/AR-QR.html")
   .then(url => {
     const img = document.createElement('img');
     img.src = url;
@@ -106,7 +106,7 @@ arButton.addEventListener('click', () => {
     qrModal.style.display = 'flex';
     qrcodeEl.innerHTML = ''; // clear previous QR
     // Generate QR code every time
-    QRCode.toDataURL("https://3d.tikitech.in/ar-qr.html")
+    QRCode.toDataURL("/AR-QR.html")
       .then(url => {
         const img = document.createElement('img');
         img.src = url;
