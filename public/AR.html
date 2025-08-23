@@ -2,41 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Three.js AR + QR (Single File, Draco)</title>
+  <title>View in AR (Single File, No Loop)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    html, body { margin:0; height:100%; overflow:hidden; font-family: system-ui, Arial, sans-serif; }
-    #ui { position:absolute; top:12px; left:12px; z-index:10; }
-    .btn {
-      padding:10px 14px; border:none; border-radius:10px; background:#1e90ff; color:#fff;
-      font-weight:600; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.2);
-    }
-    #snapshotBtn {
-      display:none; position:absolute; right:16px; bottom:16px; z-index:10;
-      padding:10px 14px; border:none; border-radius:10px; background:#111; color:#fff; cursor:pointer;
-    }
-    #qrModal {
-      display:none; position:fixed; inset:0; background:rgba(0,0,0,.7);
-      z-index:20; align-items:center; justify-content:center; flex-direction:column; gap:12px;
-    }
-    #qrCard { background:#fff; padding:16px; border-radius:12px; text-align:center; max-width: 320px; }
-    #qrCard canvas, #qrCard img { display:block; margin:0 auto; }
+    html, body { margin:0; height:100%; overflow:hidden; font-family: system-ui, Arial, sans-serif; background:#000; color:#fff; }
+    #ui { position:absolute; top:12px; left:12px; z-index:10; display:flex; gap:8px; align-items:center; }
+    .btn { padding:10px 14px; border:none; border-radius:10px; background:#1e90ff; color:#fff; font-weight:600; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.35); }
+    #qrModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:20; align-items:center; justify-content:center; flex-direction:column; gap:12px; }
+    #qrCard { background:#fff; color:#000; padding:16px; border-radius:12px; text-align:center; max-width: 320px; }
+    #qrCard canvas { display:block; margin:0 auto; }
     #closeQr { margin-top:10px; background:#e53935; }
+    /* Optional preview canvas area (black background) */
+    #preview { width:100vw; height:100vh; display:block; background:#000; }
+    .note { font-size:12px; opacity:.8; }
   </style>
 
-  <!-- Three.js (use same r128 across all scripts) -->
+  <!-- (Optional) Tiny preview using Three.js — you can remove these 3 if you don't want preview -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/webxr/ARButton.js"></script>
+
+  <!-- QR generator -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 </head>
 <body>
   <div id="ui">
-    <button id="arButton" class="btn">👓 View in AR</button>
+    <button id="openArBtn" class="btn">👓 View in AR</button>
+    <button id="qrBtn" class="btn">🔗 Get Phone Link</button>
+    <span class="note" id="statusNote"></span>
   </div>
 
-  <button id="snapshotBtn">📸 Snapshot</button>
+  <!-- Optional preview canvas -->
+  <canvas id="preview"></canvas>
 
   <!-- QR Modal -->
   <div id="qrModal">
@@ -48,207 +43,125 @@
   </div>
 
   <script>
-    // ---------- Config ----------
-    const MODEL_URL = '/models/Visicooler.glb'; // change if your path is different
-    const USE_QR_ON_DESKTOP = true;             // show QR on desktop
+    // ---------------- Config ----------------
+    const MODEL_GLB = '/models/Visicooler.glb';   // Android / Scene Viewer
+    const MODEL_USDZ = '/models/Visicooler.usdz'; // iOS / Quick Look (must exist for iPhone)
+    const REQUIRE_IOS_USDZ = true; // if true and USDZ missing, we warn iOS users
 
-    // ---------- Three.js / AR state ----------
-    let scene, camera, renderer;
-    let model = null;
-    let reticle;
-    let controller;
+    // Build absolute URLs (Netlify needs HTTPS absolute for intents)
+    const ABS_GLB  = new URL(MODEL_GLB,  window.location.origin).toString();
+    const ABS_USDZ = new URL(MODEL_USDZ, window.location.origin).toString();
 
-    let hitTestSource = null;
-    let localSpace = null;
+    // ---------------- Platform helpers ----------------
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    const isAndroid = /Android/i.test(ua);
+    const isIOS = /iPhone|iPad|iPod/i.test(ua);
 
-    const snapshotBtn = document.getElementById('snapshotBtn');
-
-    // ---------- Init ----------
-    init();
-    animate();
-
-    function init() {
-      // Scene & Camera
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
-
-      // Renderer
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.xr.enabled = true;
-      document.body.appendChild(renderer.domElement);
-
-      // Lighting
-      const hemi = new THREE.HemisphereLight(0xffffff, 0x8888ff, 1.0);
-      hemi.position.set(0, 1, 0);
-      scene.add(hemi);
-
-      const dir = new THREE.DirectionalLight(0xffffff, 0.6);
-      dir.position.set(1, 2, 1);
-      scene.add(dir);
-
-      // Reticle
-      const ring = new THREE.RingGeometry(0.07, 0.09, 32).rotateX(-Math.PI / 2);
-      const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff7f });
-      reticle = new THREE.Mesh(ring, ringMat);
-      reticle.matrixAutoUpdate = false;
-      reticle.visible = false;
-      scene.add(reticle);
-
-      // Controller (tap to place)
-      controller = renderer.xr.getController(0);
-      controller.addEventListener('select', onSelect);
-      scene.add(controller);
-
-      // Load model (hidden until placed) + DRACO support
-      const loader = new THREE.GLTFLoader();
-      const dracoLoader = new THREE.DRACOLoader();
-      // Use Google's hosted Draco decoders (works over HTTPS/localhost)
-      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
-      loader.setDRACOLoader(dracoLoader);
-
-      loader.load(
-        MODEL_URL,
-        (gltf) => {
-          model = gltf.scene;
-          model.visible = false;           // becomes visible when placed
-          model.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; }});
-          model.scale.set(1, 1, 1);        // adjust if your model is huge/small
-          scene.add(model);
-        },
-        (xhr) => {
-          // Optional: console.log(`Loading model: ${(xhr.loaded / xhr.total * 100).toFixed(0)}%`);
-        },
-        (err) => console.error('Failed to load model:', err)
-      );
-
-      // AR button / QR handling
-      setupARButtonAndQR();
-
-      // Resize handling
-      window.addEventListener('resize', onWindowResize);
-
-      // Session events for hit-test & UI
-      renderer.xr.addEventListener('sessionstart', onSessionStart);
-      renderer.xr.addEventListener('sessionend', onSessionEnd);
-
-      // Snapshot
-      snapshotBtn.addEventListener('click', doSnapshot);
+    // ---------------- AR openers ----------------
+    function openAndroidSceneViewer() {
+      // Scene Viewer intent with fallback to https
+      const intent = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(ABS_GLB)}#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
+      window.location.href = intent;
     }
 
-    function setupARButtonAndQR() {
-      const arBtn = document.getElementById('arButton');
-      const qrModal = document.getElementById('qrModal');
-      const closeQr = document.getElementById('closeQr');
+    function openIOSQuickLook() {
+      if (REQUIRE_IOS_USDZ && !ABS_USDZ.endsWith('.usdz')) {
+        alert('iOS AR requires a .usdz model. Please provide /models/Visicooler.usdz');
+        return;
+      }
+      // Quick Look just needs an <a rel="ar"> or direct navigation to the usdz
+      window.location.href = ABS_USDZ;
+    }
 
-      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-
-      if (navigator.xr && isMobile) {
-        // WebXR available on mobile → inject ARButton
-        const btn = THREE.ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] });
-        // Style tweak for consistency
-        btn.style.padding = '10px 14px';
-        btn.style.borderRadius = '10px';
-        btn.style.background = '#1e90ff';
-        btn.style.color = '#fff';
-        btn.style.fontWeight = '600';
-        btn.style.boxShadow = '0 2px 8px rgba(0,0,0,.2)';
-        arBtn.replaceWith(btn);
-      } else if (USE_QR_ON_DESKTOP) {
-        // Desktop → show QR modal
-        arBtn.addEventListener('click', openQrModal);
-        closeQr.addEventListener('click', () => { qrModal.style.display = 'none'; });
+    function openARForThisDevice() {
+      if (isAndroid) {
+        openAndroidSceneViewer();
+      } else if (isIOS) {
+        openIOSQuickLook();
       } else {
-        arBtn.addEventListener('click', () => alert('Open this page on a WebXR-capable mobile browser (HTTPS).'));
+        // Desktop or unsupported mobile -> show QR that auto-opens AR on phone
+        openQrModal(true); // true => encode ?openAR=1 link
       }
     }
 
-    function openQrModal() {
+    // When page is opened with ?openAR=1 on a phone, auto-launch AR
+    (function autoOpenFromQR() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('openAR') === '1') {
+        // Small delay to allow Safari/Chrome to settle
+        setTimeout(() => openARForThisDevice(), 250);
+      }
+    })();
+
+    // ---------------- UI wiring ----------------
+    document.getElementById('openArBtn').addEventListener('click', openARForThisDevice);
+    document.getElementById('qrBtn').addEventListener('click', () => openQrModal(true));
+    document.getElementById('closeQr').addEventListener('click', () => {
+      document.getElementById('qrModal').style.display = 'none';
+    });
+
+    function openQrModal(encodeAutoOpen) {
       const qrModal = document.getElementById('qrModal');
-      const qrCanvas = document.getElementById('qrCanvas');
+      const qrCanvasWrap = document.getElementById('qrCanvas');
+      qrCanvasWrap.innerHTML = '';
       qrModal.style.display = 'flex';
-      // Clear previous QR render
-      qrCanvas.innerHTML = '';
-      QRCode.toCanvas(window.location.href, { width: 220 }, (err, canvas) => {
-        if (!err) qrCanvas.appendChild(canvas);
+
+      // Build a page URL that includes ?openAR=1 so mobile auto-opens AR and avoids loops
+      let url = window.location.origin + window.location.pathname;
+      if (encodeAutoOpen) {
+        const u = new URL(url);
+        u.searchParams.set('openAR', '1');
+        url = u.toString();
+      }
+
+      QRCode.toCanvas(url, { width: 240 }, (err, canvas) => {
+        if (!err) qrCanvasWrap.appendChild(canvas);
       });
     }
 
-    // Place model where the reticle is
-    function onSelect() {
-      if (model && reticle.visible) {
-        const m = new THREE.Matrix4();
-        m.copy(reticle.matrix);
-
-        const pos = new THREE.Vector3();
-        const quat = new THREE.Quaternion();
-        const scale = new THREE.Vector3();
-        m.decompose(pos, quat, scale);
-
-        model.position.copy(pos);
-        model.quaternion.copy(quat);
-        model.visible = true;
-      }
-    }
-
-    async function onSessionStart() {
-      const session = renderer.xr.getSession();
+    // ---------------- Optional tiny preview (not AR) ----------------
+    // Remove this block if you don't want a 3D preview behind the UI.
+    (function previewInit(){
       try {
-        const viewerSpace = await session.requestReferenceSpace('viewer');
-        hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
-        localSpace = await session.requestReferenceSpace('local');
-      } catch (e) {
-        console.error('Hit test setup failed:', e);
-      }
-      snapshotBtn.style.display = 'inline-block';
-    }
+        const canvas = document.getElementById('preview');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 3);
 
-    function onSessionEnd() {
-      hitTestSource = null;
-      localSpace = null;
-      reticle.visible = false;
-      snapshotBtn.style.display = 'none';
-    }
+        const geo = new THREE.BoxGeometry(1,1,1);
+        const mat = new THREE.MeshStandardMaterial({ color: 0x1e90ff, roughness: 0.6, metalness: 0.1 });
+        const cube = new THREE.Mesh(geo, mat);
+        scene.add(cube);
 
-    function onWindowResize() {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    }
+        const light1 = new THREE.HemisphereLight(0xffffff, 0x222233, 1.2); scene.add(light1);
+        const light2 = new THREE.DirectionalLight(0xffffff, 0.8); light2.position.set(2,3,2); scene.add(light2);
 
-    function animate() {
-      renderer.setAnimationLoop(render);
-    }
-
-    function render(time, frame) {
-      // Update reticle from hit-test
-      if (frame && hitTestSource && localSpace) {
-        const hits = frame.getHitTestResults(hitTestSource);
-        if (hits.length > 0) {
-          const hit = hits[0];
-          const pose = hit.getPose(localSpace);
-          if (pose) {
-            reticle.visible = true;
-            reticle.matrix.fromArray(pose.transform.matrix);
-          } else {
-            reticle.visible = false;
-          }
-        } else {
-          reticle.visible = false;
+        function tick(){
+          cube.rotation.y += 0.01;
+          cube.rotation.x += 0.005;
+          renderer.render(scene, camera);
+          requestAnimationFrame(tick);
         }
-      }
-      renderer.render(scene, camera);
-    }
+        tick();
 
-    function doSnapshot() {
-      renderer.domElement.toBlob((blob) => {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'ar_snapshot.png';
-        a.click();
-        URL.revokeObjectURL(a.href);
-      });
-    }
+        window.addEventListener('resize', () => {
+          renderer.setSize(window.innerWidth, window.innerHeight);
+          camera.aspect = window.innerWidth/window.innerHeight;
+          camera.updateProjectionMatrix();
+        });
+
+        // Status hint
+        document.getElementById('statusNote').textContent =
+          isAndroid ? 'Android detected: Scene Viewer will open.' :
+          isIOS ? 'iOS detected: Quick Look will open.' :
+          'Desktop: use QR to open on phone.';
+      } catch(e) {
+        // If WebGL not available, still keep AR buttons working
+        document.getElementById('statusNote').textContent = 'Use the buttons above to open AR.';
+      }
+    })();
   </script>
 </body>
 </html>
