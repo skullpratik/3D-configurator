@@ -162,7 +162,7 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
   useEffect(() => {
     if (!scene) return;
     threeScene.background = null;
-    scene.scale.set(2, 2, 2);
+    scene.scale.set(2.5, 2.5, 2.5);
     scene.position.set(0.4, -0.836, 0);
 
     // One pass only
@@ -342,7 +342,7 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
         <planeGeometry args={[1000, 1000]} />
         <meshStandardMaterial color="#d8d8d8" roughness={0} metalness={0} visible={false} />
       </mesh>
-      <ContactShadows position={[-0.02, -0.9, 0]} opacity={1.1} scale={19} blur={2.5} far={20} />
+      <ContactShadows position={[-0.02, -0.9, 0]} opacity={0.7} scale={5} blur={2.5} far={15} />
       
       <OrbitControls
         enableDamping

@@ -70,7 +70,7 @@ export const Experience = forwardRef(function DeepFridgeExperience(
     if (!scene || !threeScene) return;
 
     threeScene.background = null;
-    scene.scale.set(2, 2, 2);
+    scene.scale.set(2.5, 2.5, 2.5);
     scene.position.set(0.2, -1.16, 0);
 
     scene.traverse((obj) => {

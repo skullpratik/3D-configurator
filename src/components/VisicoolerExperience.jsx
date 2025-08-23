@@ -446,7 +446,7 @@ useEffect(() => {
   useEffect(() => {
     if (!scene || !threeScene) return;
     
-    scene.scale.set(2,2,2);
+    scene.scale.set(2.5,2.5,2.5);
     scene.position.set(positionRef.current.x, positionRef.current.y, positionRef.current.z);
     scene.traverse(c => { if (c.isMesh && c.name!=="Door") { c.castShadow = true; c.receiveShadow = true; } });
     if (onAssetLoaded) onAssetLoaded();
@@ -481,7 +481,7 @@ useEffect(() => {
 
   return (
     <Suspense fallback={null}>
-      {!ledVisible && <Environment files="photo_studio_01_1k.hdr" background={false} intensity={1.2} onLoad={onAssetLoaded} />}
+       <Environment files="photo_studio_01_1k.hdr" background={false} intensity={1.2} />
       <mesh rotation={[-Math.PI/2,0,0]} position={[0,-1.3,0]} receiveShadow>
         <planeGeometry args={[1000,1000]} />
         <meshStandardMaterial color="#d8d8d8" roughness={0} metalness={0} visible={false}/>
