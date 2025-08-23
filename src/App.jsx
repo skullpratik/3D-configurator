@@ -244,15 +244,32 @@ export default function App() {
             <Box sx={{ p: 3, height: "100%", overflowY: "auto" }}>
               {modelType === "undercounter" && <UnderCounterInterface onDoorChange={handleDoorChange} onMaterialChange={handleMaterialChange} onDoorTypeChange={setDoorType} doorType={doorType} />}
               {modelType === "visicooler" && (
-                <VisicoolerInterface
-                  onLEDToggle={handleLEDToggle}
-                  onCanopyColorChange={setCanopyColor} canopyColor={canopyColor}
-                  onBottomBorderColorChange={setBottomBorderColor} bottomBorderColor={bottomBorderColor}
-                  onDoorColorChange={setDoorColor} doorColor={doorColor}
-                  onTopPanelColorChange={setTopPanelColor} topPanelColor={topPanelColor}
-                  onLouverColorChange={setLouverColor} louverColor={louverColor}
-                  onColorShadingChange={setColorShading}
-                />
+            <VisicoolerInterface
+  onLEDToggle={handleLEDToggle}
+  onCanopyColorChange={setCanopyColor}
+  canopyColor={canopyColor}
+  onBottomBorderColorChange={setBottomBorderColor}
+  bottomBorderColor={bottomBorderColor}
+  onDoorColorChange={setDoorColor}
+  doorColor={doorColor}
+  onTopPanelColorChange={setTopPanelColor}
+  topPanelColor={topPanelColor}
+  onLouverColorChange={setLouverColor}
+  louverColor={louverColor}
+  onColorShadingChange={setColorShading}
+
+  onCanopyTextureUpload={(url) => visiCoolerRef.current?.applyCanopyTexture(url)}
+  onCanopyTextureReset={() => visiCoolerRef.current?.resetCanopyTexture()}
+
+  onSidePanel1TextureUpload={(url) => visiCoolerRef.current?.applySidePanel1Texture(url)}
+  onSidePanel1TextureReset={() => visiCoolerRef.current?.resetSidePanel1Texture()}
+
+  onSidePanel2TextureUpload={(url) => visiCoolerRef.current?.applySidePanel2Texture(url)}
+  onSidePanel2TextureReset={() => visiCoolerRef.current?.resetSidePanel2Texture()}
+
+  onLouverTextureUpload={(url) => visiCoolerRef.current?.applyLouverTexture(url)}
+  onLouverTextureReset={() => visiCoolerRef.current?.resetLouverTexture()}
+/>
               )}
               {modelType === "deepfridge" && <DeepFridgeInterface onMaterialChange={handleMaterialChange} onFrontTextureUpload={(url) => deepFridgeRef.current?.applyFrontTexture(url)} onFrontTextureReset={() => deepFridgeRef.current?.resetFront()} />}
             </Box>

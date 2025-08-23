@@ -21,7 +21,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CloseIcon from "@mui/icons-material/Close";
 import PaletteIcon from "@mui/icons-material/Palette";
 import ImageIcon from "@mui/icons-material/Image";
-import ViewInArIcon from "@mui/icons-material/ViewInAr"; // Import AR icon
+import ViewInArIcon from "@mui/icons-material/ViewInAr";
 
 export const Interface = ({
   onLEDToggle,
@@ -41,12 +41,12 @@ export const Interface = ({
   onSidePanel1TextureReset,
   onSidePanel2TextureUpload,
   onSidePanel2TextureReset,
-  onLouverTextureUpload,     
+  onLouverTextureUpload,
   onLouverTextureReset,
   onColorShadingChange
 }) => {
   const [ledVisible, setLedVisible] = useState(false);
-  const [louverMode, setLouverMode] = useState("color"); // "color" or "image"
+  const [louverMode, setLouverMode] = useState("color");
 
   const [colorShading, setColorShading] = useState({
     canopy: 0,
@@ -84,9 +84,7 @@ export const Interface = ({
     { label: "Silver", value: "#c0c0c0" },
   ];
 
-  // Function to handle AR button click
   const handleARRedirect = () => {
-    // Redirect to AR.html
     window.location.href = "AR.html";
   };
 
@@ -111,13 +109,17 @@ export const Interface = ({
         break;
       case "louver":
         onLouverColorChange?.(value);
+        if (value) {
+          setLouverImage(null);
+          onLouverTextureReset?.();
+        }
         break;
       default:
         break;
     }
   };
 
-   const handleShadingChange = (type, value) => {
+  const handleShadingChange = (type, value) => {
     const newShading = { ...colorShading, [type]: value };
     setColorShading(newShading);
     onColorShadingChange?.(newShading);
@@ -126,10 +128,8 @@ export const Interface = ({
   const handleLouverModeChange = (event, newMode) => {
     if (newMode !== null) {
       setLouverMode(newMode);
-      // Reset the other option when switching modes
       if (newMode === "color") {
         setLouverImage(null);
-        if (louverInputRef.current) louverInputRef.current.value = "";
         onLouverTextureReset?.();
       } else {
         onLouverColorChange?.(null);
@@ -158,7 +158,7 @@ export const Interface = ({
         <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center' }}>
           <PaletteIcon sx={{ mr: 1, fontSize: 18 }} /> {title}
         </Typography>
-        
+
         <FormControl fullWidth size="small" sx={{ mb: 2 }}>
           <Select
             value={selectedColor ?? ""}
@@ -226,17 +226,17 @@ export const Interface = ({
         <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center' }}>
           <ImageIcon sx={{ mr: 1, fontSize: 18 }} /> {title}
         </Typography>
-        
+
         {image ? (
           <Box sx={{ position: "relative", mb: 1.5 }}>
             <Box
               component="img"
               src={image}
-              sx={{ 
-                width: "100%", 
-                height: 120, 
-                objectFit: "cover", 
-                borderRadius: 1, 
+              sx={{
+                width: "100%",
+                height: 120,
+                objectFit: "cover",
+                borderRadius: 1,
                 border: "1px solid #e0e0e0",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
               }}
@@ -249,12 +249,12 @@ export const Interface = ({
                 if (inputRef.current) inputRef.current.value = "";
                 onReset?.();
               }}
-              sx={{ 
-                position: "absolute", 
-                top: 6, 
-                right: 6, 
-                backgroundColor: "rgba(0,0,0,0.7)", 
-                color: "white", 
+              sx={{
+                position: "absolute",
+                top: 6,
+                right: 6,
+                backgroundColor: "rgba(0,0,0,0.7)",
+                color: "white",
                 "&:hover": { backgroundColor: "rgba(0,0,0,0.9)" },
                 width: 28,
                 height: 28
@@ -269,10 +269,10 @@ export const Interface = ({
             component="label"
             fullWidth
             startIcon={uploading ? <CircularProgress size={16} /> : <CloudUploadIcon />}
-            sx={{ 
-              py: 1.5, 
-              backgroundColor: "#f7f9fc", 
-              border: "1px dashed #ccc", 
+            sx={{
+              py: 1.5,
+              backgroundColor: "#f7f9fc",
+              border: "1px dashed #ccc",
               "&:hover": { border: "1px dashed #007bff", backgroundColor: "#e3f2fd" },
               borderRadius: 1
             }}
@@ -306,7 +306,6 @@ export const Interface = ({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      {/* AR Button - Added at the top */}
       <Card variant="outlined">
         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
           <Button
@@ -314,8 +313,8 @@ export const Interface = ({
             fullWidth
             startIcon={<ViewInArIcon />}
             onClick={handleARRedirect}
-            sx={{ 
-              py: 1.5, 
+            sx={{
+              py: 1.5,
               backgroundColor: "#1e90ff",
               "&:hover": { backgroundColor: "#0d7acc" }
             }}
@@ -325,7 +324,6 @@ export const Interface = ({
         </CardContent>
       </Card>
 
-      {/* LED Control */}
       <Card variant="outlined">
         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
           <FormControlLabel
@@ -345,50 +343,45 @@ export const Interface = ({
         </CardContent>
       </Card>
 
-      {/* Canopy Upload */}
       {renderUploadSection(
-        "Canopy Image", 
-        canopyImage, 
-        setCanopyImage, 
-        canopyInputRef, 
-        uploadingCanopy, 
-        setUploadingCanopy, 
-        onCanopyTextureUpload, 
+        "Canopy Image",
+        canopyImage,
+        setCanopyImage,
+        canopyInputRef,
+        uploadingCanopy,
+        setUploadingCanopy,
+        onCanopyTextureUpload,
         onCanopyTextureReset
       )}
 
-      {/* Side Panel 1 Upload */}
       {renderUploadSection(
-        "Side Panel 1", 
-        sidePanel1Image, 
-        setSidePanel1Image, 
-        sp1InputRef, 
-        uploadingSP1, 
-        setUploadingSP1, 
-        onSidePanel1TextureUpload, 
+        "Side Panel 1",
+        sidePanel1Image,
+        setSidePanel1Image,
+        sp1InputRef,
+        uploadingSP1,
+        setUploadingSP1,
+        onSidePanel1TextureUpload,
         onSidePanel1TextureReset
       )}
 
-      {/* Side Panel 2 Upload */}
       {renderUploadSection(
-        "Side Panel 2", 
-        sidePanel2Image, 
-        setSidePanel2Image, 
-        sp2InputRef, 
-        uploadingSP2, 
-        setUploadingSP2, 
-        onSidePanel2TextureUpload, 
+        "Side Panel 2",
+        sidePanel2Image,
+        setSidePanel2Image,
+        sp2InputRef,
+        uploadingSP2,
+        setUploadingSP2,
+        onSidePanel2TextureUpload,
         onSidePanel2TextureReset
       )}
 
-      {/* Louver Customization */}
       <Card variant="outlined">
         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
             Louver Customization
           </Typography>
-          
-          {/* Mode Selection */}
+
           <ToggleButtonGroup
             value={louverMode}
             exclusive
@@ -405,7 +398,6 @@ export const Interface = ({
             </ToggleButton>
           </ToggleButtonGroup>
 
-          {/* Color or Image based on mode */}
           {louverMode === "color" ? (
             <>
               <FormControl fullWidth size="small" sx={{ mb: 2 }}>
@@ -473,11 +465,11 @@ export const Interface = ({
                   <Box
                     component="img"
                     src={louverImage}
-                    sx={{ 
-                      width: "100%", 
-                      height: 120, 
-                      objectFit: "cover", 
-                      borderRadius: 1, 
+                    sx={{
+                      width: "100%",
+                      height: 120,
+                      objectFit: "cover",
+                      borderRadius: 1,
                       border: "1px solid #e0e0e0",
                       boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
                     }}
@@ -490,12 +482,12 @@ export const Interface = ({
                       if (louverInputRef.current) louverInputRef.current.value = "";
                       onLouverTextureReset?.();
                     }}
-                    sx={{ 
-                      position: "absolute", 
-                      top: 6, 
-                      right: 6, 
-                      backgroundColor: "rgba(0,0,0,0.7)", 
-                      color: "white", 
+                    sx={{
+                      position: "absolute",
+                      top: 6,
+                      right: 6,
+                      backgroundColor: "rgba(0,0,0,0.7)",
+                      color: "white",
                       "&:hover": { backgroundColor: "rgba(0,0,0,0.9)" },
                       width: 28,
                       height: 28
@@ -510,10 +502,10 @@ export const Interface = ({
                   component="label"
                   fullWidth
                   startIcon={uploadingLouver ? <CircularProgress size={16} /> : <CloudUploadIcon />}
-                  sx={{ 
-                    py: 1.5, 
-                    backgroundColor: "#f7f9fc", 
-                    border: "1px dashed #ccc", 
+                  sx={{
+                    py: 1.5,
+                    backgroundColor: "#f7f9fc",
+                    border: "1px dashed #ccc",
                     "&:hover": { border: "1px dashed #007bff", backgroundColor: "#e3f2fd" },
                     borderRadius: 1
                   }}
@@ -545,7 +537,6 @@ export const Interface = ({
 
       <Divider sx={{ my: 1 }} />
 
-      {/* Color Sections */}
       {renderColorSection("Canopy Border Color", canopyColor, "canopy")}
       {renderColorSection("Bottom Border Color", bottomBorderColor, "bottom")}
       {renderColorSection("Door Color", doorColor, "door")}
