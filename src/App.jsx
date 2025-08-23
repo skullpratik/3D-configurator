@@ -8,6 +8,7 @@ import { Experience as UnderCounterExperience } from "./components/UnderCounterE
 import { Experience as VisicoolerExperience } from "./components/VisicoolerExperience";
 import { Experience as DeepFridgeExperience } from "./components/DeepFridgeExperience";
 import { Loader } from "./components/Loader";
+import { useProgress } from "@react-three/drei"; // Import useProgress
 
 // GL provider
 function GLProvider({ setGL }) {
@@ -70,7 +71,6 @@ function CanvasContent({
   topPanelColor,
   ledEnabled,
   louverColor,
-  onAssetLoaded,
   colorShading,
 }) {
   switch (modelType) {
@@ -82,7 +82,6 @@ function CanvasContent({
           roughness={materialProps.roughness}
           lightSettings={lightSettings}
           doorType={doorType}
-          onAssetLoaded={onAssetLoaded}
         />
       );
     case "visicooler":
@@ -98,7 +97,6 @@ function CanvasContent({
           topPanelColor={topPanelColor}
           ledVisible={lightSettings.ledVisible}
           louverColor={louverColor}
-          onAssetLoaded={onAssetLoaded}
           colorShading={colorShading}
         />
       );
@@ -109,7 +107,6 @@ function CanvasContent({
           metalness={materialProps.metalness}
           roughness={materialProps.roughness}
           lightSettings={lightSettings}
-          onAssetLoaded={onAssetLoaded}
         />
       );
     default:
@@ -131,6 +128,9 @@ export default function App() {
     ledVisible: false,
   });
   const [doorType, setDoorType] = useState("solid");
+  
+  // Use the useProgress hook to track loading
+  const { progress } = useProgress();
 
   const [canopyColor, setCanopyColor] = useState(null);
   const [bottomBorderColor, setBottomBorderColor] = useState(null);
@@ -144,40 +144,6 @@ export default function App() {
     toppanel: 0,
     louver: 0,
   });
-
-  // Loading state
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadingProgress, setLoadingProgress] = useState(0);
-  const [loadedAssets, setLoadedAssets] = useState(0);
-  const totalAssets = 2; // Model + environment
-
-  const handleAssetLoaded = () => {
-    setLoadedAssets((prev) => {
-      const newValue = prev + 1;
-      const progress = Math.min(100, Math.round((newValue / totalAssets) * 100));
-      setLoadingProgress(progress);
-      if (newValue === totalAssets) {
-        setTimeout(() => setIsLoading(false), 300);
-      }
-      return newValue;
-    });
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (isLoading && loadingProgress < 100) {
-        setLoadingProgress((prev) => {
-          const newProgress = Math.min(100, prev + 10);
-          if (newProgress === 100) {
-            setIsLoading(false);
-          }
-          return newProgress;
-        });
-      }
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [isLoading, loadingProgress]);
 
   const handleDoorChange = (count, position) => {
     const ref =
@@ -204,12 +170,14 @@ export default function App() {
     <Box
       sx={{
         display: "flex",
+        flexDirection: "reverse",
         height: "100vh",
         width: "100vw",
-        opacity: loadingProgress === 100 ? 1 : 0,
         transition: "opacity 0.5s ease-in-out",
       }}
     >
+      {/* Conditionally render the Loader based on progress */}
+      {progress < 100 && <Loader progress={progress} />}
       <Paper
         elevation={3}
         sx={{
@@ -335,10 +303,9 @@ export default function App() {
             louverColor={louverColor}
             colorShading={colorShading}
             ledEnabled={false}
-            onAssetLoaded={handleAssetLoaded}
           />
         </Canvas>
-        <DownloadButton gl={gl} disabled={isLoading} />
+        <DownloadButton gl={gl} />
       </Box>
     </Box>
   );
