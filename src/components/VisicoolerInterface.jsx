@@ -21,6 +21,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CloseIcon from "@mui/icons-material/Close";
 import PaletteIcon from "@mui/icons-material/Palette";
 import ImageIcon from "@mui/icons-material/Image";
+import ViewInArIcon from "@mui/icons-material/ViewInAr"; // Import AR icon
 
 export const Interface = ({
   onLEDToggle,
@@ -42,7 +43,7 @@ export const Interface = ({
   onSidePanel2TextureReset,
   onLouverTextureUpload,     
   onLouverTextureReset,
-  onColorShadingChange // Add this new prop
+  onColorShadingChange
 }) => {
   const [ledVisible, setLedVisible] = useState(false);
   const [louverMode, setLouverMode] = useState("color"); // "color" or "image"
@@ -82,6 +83,12 @@ export const Interface = ({
     { label: "White", value: "#ffffff" },
     { label: "Silver", value: "#c0c0c0" },
   ];
+
+  // Function to handle AR button click
+  const handleARRedirect = () => {
+    // Redirect to AR.html
+    window.location.href = "AR.html";
+  };
 
   const handleLED = (e) => {
     setLedVisible(e.target.checked);
@@ -299,6 +306,25 @@ export const Interface = ({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {/* AR Button - Added at the top */}
+      <Card variant="outlined">
+        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+          <Button
+            variant="contained"
+            fullWidth
+            startIcon={<ViewInArIcon />}
+            onClick={handleARRedirect}
+            sx={{ 
+              py: 1.5, 
+              backgroundColor: "#1e90ff",
+              "&:hover": { backgroundColor: "#0d7acc" }
+            }}
+          >
+            View in AR
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* LED Control */}
       <Card variant="outlined">
         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
