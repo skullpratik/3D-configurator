@@ -1,4 +1,4 @@
-import React, { useRef, useState,useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Box, Paper, Typography, IconButton } from "@mui/material";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 
@@ -25,9 +25,9 @@ function CameraShift({ sidebarOpen }) {
 
   useEffect(() => {
     if (sidebarOpen) {
-      camera.position.set(4, 2, 8); // Position when sidebar is open
+      camera.position.set(4, 2, 8);
     } else {
-      camera.position.set(4, 4, 8); // Position when sidebar is closed
+      camera.position.set(4, 4, 8);
     }
     camera.updateProjectionMatrix();
   }, [sidebarOpen, camera]);
@@ -190,6 +190,14 @@ export default function App() {
     setLightSettings(prev => ({ ...prev, ledVisible: visible }));
     visiCoolerRef.current?.toggleLEDLight1001?.(visible);
   };
+  
+  // New handler functions for Deep Fridge
+  const handleFrontTextureUpload = (url) => deepFridgeRef.current?.applyFrontTexture(url);
+  const handleFrontTextureReset = () => deepFridgeRef.current?.resetFront();
+  const handleLeftTextureUpload = (url) => deepFridgeRef.current?.applyLeftTexture(url);
+  const handleLeftTextureReset = () => deepFridgeRef.current?.resetLeft();
+  const handleRightTextureUpload = (url) => deepFridgeRef.current?.applyRightTexture(url);
+  const handleRightTextureReset = () => deepFridgeRef.current?.resetRight();
 
   return (
     <Box sx={{ display: "flex", flexDirection: "row-reverse", height: "100vh", width: "100vw" }}>
@@ -212,7 +220,7 @@ export default function App() {
           onClick={() => setOpen(!open)}
           sx={{
             position: "absolute",
-            left: open ? -25 : -35,
+            left: open ? -45 : -45,
             top: "50%",
             transform: "translateY(-50%)",
             background: "#fff",
@@ -244,34 +252,40 @@ export default function App() {
             <Box sx={{ p: 3, height: "100%", overflowY: "auto" }}>
               {modelType === "undercounter" && <UnderCounterInterface onDoorChange={handleDoorChange} onMaterialChange={handleMaterialChange} onDoorTypeChange={setDoorType} doorType={doorType} />}
               {modelType === "visicooler" && (
-            <VisicoolerInterface
-  onLEDToggle={handleLEDToggle}
-  onCanopyColorChange={setCanopyColor}
-  canopyColor={canopyColor}
-  onBottomBorderColorChange={setBottomBorderColor}
-  bottomBorderColor={bottomBorderColor}
-  onDoorColorChange={setDoorColor}
-  doorColor={doorColor}
-  onTopPanelColorChange={setTopPanelColor}
-  topPanelColor={topPanelColor}
-  onLouverColorChange={setLouverColor}
-  louverColor={louverColor}
-  onColorShadingChange={setColorShading}
-
-  onCanopyTextureUpload={(url) => visiCoolerRef.current?.applyCanopyTexture(url)}
-  onCanopyTextureReset={() => visiCoolerRef.current?.resetCanopyTexture()}
-
-  onSidePanel1TextureUpload={(url) => visiCoolerRef.current?.applySidePanel1Texture(url)}
-  onSidePanel1TextureReset={() => visiCoolerRef.current?.resetSidePanel1Texture()}
-
-  onSidePanel2TextureUpload={(url) => visiCoolerRef.current?.applySidePanel2Texture(url)}
-  onSidePanel2TextureReset={() => visiCoolerRef.current?.resetSidePanel2Texture()}
-
-  onLouverTextureUpload={(url) => visiCoolerRef.current?.applyLouverTexture(url)}
-  onLouverTextureReset={() => visiCoolerRef.current?.resetLouverTexture()}
-/>
+                <VisicoolerInterface
+                  onLEDToggle={handleLEDToggle}
+                  onCanopyColorChange={setCanopyColor}
+                  canopyColor={canopyColor}
+                  onBottomBorderColorChange={setBottomBorderColor}
+                  bottomBorderColor={bottomBorderColor}
+                  onDoorColorChange={setDoorColor}
+                  doorColor={doorColor}
+                  onTopPanelColorChange={setTopPanelColor}
+                  topPanelColor={topPanelColor}
+                  onLouverColorChange={setLouverColor}
+                  louverColor={louverColor}
+                  onColorShadingChange={setColorShading}
+                  onCanopyTextureUpload={(url) => visiCoolerRef.current?.applyCanopyTexture(url)}
+                  onCanopyTextureReset={() => visiCoolerRef.current?.resetCanopyTexture()}
+                  onSidePanel1TextureUpload={(url) => visiCoolerRef.current?.applySidePanel1Texture(url)}
+                  onSidePanel1TextureReset={() => visiCoolerRef.current?.resetSidePanel1Texture()}
+                  onSidePanel2TextureUpload={(url) => visiCoolerRef.current?.applySidePanel2Texture(url)}
+                  onSidePanel2TextureReset={() => visiCoolerRef.current?.resetSidePanel2Texture()}
+                  onLouverTextureUpload={(url) => visiCoolerRef.current?.applyLouverTexture(url)}
+                  onLouverTextureReset={() => visiCoolerRef.current?.resetLouverTexture()}
+                />
               )}
-              {modelType === "deepfridge" && <DeepFridgeInterface onMaterialChange={handleMaterialChange} onFrontTextureUpload={(url) => deepFridgeRef.current?.applyFrontTexture(url)} onFrontTextureReset={() => deepFridgeRef.current?.resetFront()} />}
+              {modelType === "deepfridge" && (
+                <DeepFridgeInterface 
+                  onMaterialChange={handleMaterialChange} 
+                  onFrontTextureUpload={handleFrontTextureUpload} 
+                  onFrontTextureReset={handleFrontTextureReset}
+                  onLeftTextureUpload={handleLeftTextureUpload} // Added prop
+                  onLeftTextureReset={handleLeftTextureReset} // Added prop
+                  onRightTextureUpload={handleRightTextureUpload} // Added prop
+                  onRightTextureReset={handleRightTextureReset} // Added prop
+                />
+              )}
             </Box>
           </>
         )}
@@ -282,7 +296,7 @@ export default function App() {
         <Canvas shadows camera={{ position: [4, 4, 8], fov: 35 }} gl={{ preserveDrawingBuffer: true }}>
           <GLProvider setGL={setGL} />
           <CameraAspectFix />
-          <CameraShift sidebarOpen={open} /> 
+          <CameraShift sidebarOpen={open} />
           <CanvasContent
             modelType={modelType}
             materialProps={materialProps}
