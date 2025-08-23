@@ -4,11 +4,11 @@ import { Interface as UnderCounterInterface } from "./components/UnderCounterInt
 import { Interface as VisicoolerInterface } from "./components/VisicoolerInterface";
 import { Interface as DeepFridgeInterface } from "./components/DeepFridgeInterface";
 import { Canvas, useThree } from "@react-three/fiber";
+import { Html, useProgress } from "@react-three/drei";
 import { Experience as UnderCounterExperience } from "./components/UnderCounterExperience";
 import { Experience as VisicoolerExperience } from "./components/VisicoolerExperience";
 import { Experience as DeepFridgeExperience } from "./components/DeepFridgeExperience";
 import { Loader } from "./components/Loader";
-import { useProgress } from "@react-three/drei"; // Import useProgress
 
 // GL provider
 function GLProvider({ setGL }) {
@@ -71,11 +71,19 @@ function CanvasContent({
   topPanelColor,
   ledEnabled,
   louverColor,
-  colorShading,
+  colorShading
 }) {
-  switch (modelType) {
-    case "undercounter":
-      return (
+  const { progress } = useProgress();
+
+  return (
+    <>
+      {progress < 100 && (
+        <Html fullscreen>
+          <Loader progress={progress} />
+        </Html>
+      )}
+
+      {modelType === "undercounter" && (
         <UnderCounterExperience
           ref={underCounterRef}
           metalness={materialProps.metalness}
@@ -83,9 +91,8 @@ function CanvasContent({
           lightSettings={lightSettings}
           doorType={doorType}
         />
-      );
-    case "visicooler":
-      return (
+      )}
+      {modelType === "visicooler" && (
         <VisicoolerExperience
           ref={visiCoolerRef}
           metalness={materialProps.metalness}
@@ -99,19 +106,17 @@ function CanvasContent({
           louverColor={louverColor}
           colorShading={colorShading}
         />
-      );
-    case "deepfridge":
-      return (
+      )}
+      {modelType === "deepfridge" && (
         <DeepFridgeExperience
           ref={deepFridgeRef}
           metalness={materialProps.metalness}
           roughness={materialProps.roughness}
           lightSettings={lightSettings}
         />
-      );
-    default:
-      return null;
-  }
+      )}
+    </>
+  );
 }
 
 export default function App() {
@@ -129,9 +134,6 @@ export default function App() {
   });
   const [doorType, setDoorType] = useState("solid");
   
-  // Use the useProgress hook to track loading
-  const { progress } = useProgress();
-
   const [canopyColor, setCanopyColor] = useState(null);
   const [bottomBorderColor, setBottomBorderColor] = useState(null);
   const [doorColor, setDoorColor] = useState(null);
@@ -176,8 +178,6 @@ export default function App() {
         transition: "opacity 0.5s ease-in-out",
       }}
     >
-      {/* Conditionally render the Loader based on progress */}
-      {progress < 100 && <Loader progress={progress} />}
       <Paper
         elevation={3}
         sx={{

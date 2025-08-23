@@ -5,8 +5,11 @@ export const Loader = ({ progress = 0 }) => {
   return (
     <Box
       sx={{
-        position: "fixed",
-        inset: 0,
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
         zIndex: 9999,
         display: "flex",
         flexDirection: "column",
