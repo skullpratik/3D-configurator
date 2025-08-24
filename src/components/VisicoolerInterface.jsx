@@ -387,7 +387,7 @@ export const Interface = ({
           hidden
         />
         <Typography variant="caption" sx={{ mt: 0.5, display: "block", color: "text.secondary", fontSize: '0.6rem' }}>
-          JPG, PNG, or GIF. Max 5MB.
+          JPG, PNG. Max 5MB.
         </Typography>
       </CardContent>
     </StyledCard>
