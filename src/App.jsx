@@ -2,16 +2,13 @@ import React, { useRef, useState, useEffect } from "react";
 import { Box, Paper, Typography, IconButton } from "@mui/material";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 
-// Interfaces (UI controls for each model)
 import { Interface as UnderCounterInterface } from "./components/UnderCounterInterface";
 import { Interface as VisicoolerInterface } from "./components/VisicoolerInterface";
 import { Interface as DeepFridgeInterface } from "./components/DeepFridgeInterface";
 
-// React-Three-Fiber
 import { Canvas, useThree } from "@react-three/fiber";
 import { Html, useProgress } from "@react-three/drei";
 
-// 3D Experiences (scenes for each model)
 import { Experience as UnderCounterExperience } from "./components/UnderCounterExperience";
 import { Experience as VisicoolerExperience } from "./components/VisicoolerExperience";
 import { Experience as DeepFridgeExperience } from "./components/DeepFridgeExperience";
@@ -20,14 +17,20 @@ import { Loader } from "./components/Loader";
 // ---------------- GL Provider ----------------
 function GLProvider({ setGL }) {
   const { gl } = useThree();
-  useEffect(() => setGL(gl), [gl, setGL]);
+  React.useEffect(() => setGL(gl), [gl, setGL]);
   return null;
 }
-
-// ---------------- Camera Aspect Fix ----------------
+function CameraShift({ sidebarOpen }) {
+  const { camera } = useThree();
+  useEffect(() => {
+    camera.position.set(4, sidebarOpen ? 2 : 4, 8);
+    camera.updateProjectionMatrix();
+  }, [sidebarOpen, camera]);
+  return null;
+}
 function CameraAspectFix() {
   const { camera, gl } = useThree();
-  useEffect(() => {
+  React.useEffect(() => {
     const resizeCamera = () => {
       const canvas = gl.domElement;
       camera.aspect = canvas.clientWidth / canvas.clientHeight;
@@ -74,6 +77,7 @@ function DownloadButton({ gl }) {
 }
 
 // ---------------- Canvas Content ----------------
+// The Loader is moved out of this component.
 function CanvasContent({
   modelType,
   materialProps,
@@ -89,14 +93,8 @@ function CanvasContent({
   louverColor,
   colorShading,
 }) {
-  const { progress } = useProgress();
   return (
     <>
-      {progress < 100 && (
-        <Html fullscreen>
-          <Loader progress={progress} />
-        </Html>
-      )}
       {modelType === "undercounter" && (
         <UnderCounterExperience
           ref={underCounterRef}
@@ -142,12 +140,15 @@ const models = [
 
 function HeaderDropdown({ modelType, setModelType, panelWidth }) {
   const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
   const selectedModel = models.find((m) => m.value === modelType);
-  const availableModels = models.filter((m) => m.value !== modelType);
+
+  const availableModels = models.filter((model) => model.value !== modelType);
 
   return (
     <Box
       sx={{ position: "relative", width: "100%" }}
+      ref={dropdownRef}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
@@ -265,7 +266,7 @@ function HeaderDropdown({ modelType, setModelType, panelWidth }) {
   );
 }
 
-// ---------------- App ----------------
+// ---------------- App Component ----------------
 export default function App() {
   const underCounterRef = useRef();
   const visiCoolerRef = useRef();
@@ -285,24 +286,24 @@ export default function App() {
   const [doorColor, setDoorColor] = useState(null);
   const [topPanelColor, setTopPanelColor] = useState(null);
   const [louverColor, setLouverColor] = useState(null);
-  const [colorShading, setColorShading] = useState({
-    canopy: 0, bottom: 0, door: 0, toppanel: 0, louver: 0,
-  });
+  const [colorShading, setColorShading] = useState({ canopy: 0, bottom: 0, door: 0, toppanel: 0, louver: 0 });
   const [open, setOpen] = useState(true);
+
+  // Hook to get the loading progress
+  const { progress } = useProgress();
 
   const handleDoorChange = (count, position) => {
     const ref =
       modelType === "undercounter"
         ? underCounterRef.current
         : modelType === "visicooler"
-        ? visiCoolerRef.current
-        : deepFridgeRef.current;
+          ? visiCoolerRef.current
+          : deepFridgeRef.current;
     if (ref?.setDoorSelection) ref.setDoorSelection(count, position);
   };
 
   const handleMaterialChange = (prop, value) =>
     setMaterialProps((prev) => ({ ...prev, [prop]: value }));
-
   const handleLEDToggle = (visible) => {
     setLightSettings((prev) => ({ ...prev, ledVisible: visible }));
     visiCoolerRef.current?.toggleLEDLight1001?.(visible);
@@ -319,7 +320,7 @@ export default function App() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "row-reverse", height: "100vh", width: "100vw" }}>
-      {/* Side Panel */}
+      {/* Interface Panel */}
       <Paper
         elevation={3}
         sx={{
@@ -333,6 +334,7 @@ export default function App() {
           position: "relative",
         }}
       >
+        {/* Toggle Button */}
         <IconButton
           onClick={() => setOpen(!open)}
           sx={{
@@ -368,7 +370,7 @@ export default function App() {
               <HeaderDropdown modelType={modelType} setModelType={setModelType} panelWidth={panelWidth} />
             </Box>
 
-            {/* Controls */}
+            {/* Interface Body */}
             <Box sx={{ p: 3, height: "100%", overflowY: "auto" }}>
               {modelType === "undercounter" && (
                 <UnderCounterInterface
@@ -418,15 +420,21 @@ export default function App() {
         )}
       </Paper>
 
-      {/* 3D Scene */}
+      {/* Scene Panel */}
       <Box sx={{ flex: 1, position: "relative" }}>
+        {/* Render the loader outside the Canvas but in the same parent Box */}
+        {progress < 100 && <Loader progress={progress} />}
+
         <Canvas
           shadows
           camera={{ position: [4, 4, 8], fov: 35 }}
           gl={{ preserveDrawingBuffer: true }}
+          // Hide the canvas when loading to prevent the empty screen flash
+          style={{ visibility: progress === 100 ? "visible" : "hidden" }}
         >
           <GLProvider setGL={setGL} />
           <CameraAspectFix />
+          <CameraShift sidebarOpen={open} />
           <CanvasContent
             modelType={modelType}
             materialProps={materialProps}
