@@ -59,7 +59,7 @@ function DownloadButton({ gl }) {
       style={{
         position: "fixed",
         bottom: 20,
-        right: 20,
+        right: 590,
         padding: "10px 15px",
         backgroundColor: "#007bff",
         border: "none",
