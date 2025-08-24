@@ -7,10 +7,39 @@ import {
   CircularProgress,
   Card,
   CardContent,
+  Grid, // Import Grid for the new layout
 } from "@mui/material";
+import { styled } from '@mui/material/styles';
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CloseIcon from "@mui/icons-material/Close";
 import ImageIcon from "@mui/icons-material/Image";
+
+// Styled component for the cards to add a hover effect and consistent styling
+const StyledCard = styled(Card)(({ theme }) => ({
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+  '&:hover': {
+    transform: 'translateY(-4px)',
+    boxShadow: theme.shadows[4],
+  },
+  borderRadius: theme.shape.borderRadius * 2,
+}));
+
+// Styled component for the upload button to customize its appearance
+const UploadButton = styled(Button)(({ theme }) => ({
+  py: 1.5,
+  backgroundColor: "#f7f9fc",
+  border: "1px dashed #ccc",
+  "&:hover": {
+    border: "1px dashed #007bff",
+    backgroundColor: "#e3f2fd",
+  },
+  borderRadius: theme.shape.borderRadius,
+  textTransform: 'none',
+  fontSize: '0.875rem'
+}));
 
 export function Interface({
   onFrontTextureUpload,
@@ -20,6 +49,7 @@ export function Interface({
   onRightTextureUpload,
   onRightTextureReset,
 }) {
+  // State and refs for each panel
   const [uploadingFront, setUploadingFront] = useState(false);
   const [frontImage, setFrontImage] = useState(null);
   const frontInputRef = useRef(null);
@@ -32,6 +62,12 @@ export function Interface({
   const [rightImage, setRightImage] = useState(null);
   const rightInputRef = useRef(null);
 
+  /**
+   * Reads an image file and converts it to a data URL.
+   * @param {File} file - The image file to read.
+   * @param {function(string): void} onDone - Callback function with the data URL.
+   * @param {function(boolean): void} setUploading - State setter for the uploading status.
+   */
   const readImage = (file, onDone, setUploading) => {
     if (!file) return;
     setUploading(true);
@@ -47,6 +83,17 @@ export function Interface({
     reader.readAsDataURL(file);
   };
 
+  /**
+   * Renders a customizable upload section for an image.
+   * @param {string} title - The title of the panel (e.g., "Front Panel").
+   * @param {string} image - The data URL of the uploaded image.
+   * @param {function(string|null): void} setImage - State setter for the image.
+   * @param {React.MutableRefObject} inputRef - Ref for the file input element.
+   * @param {boolean} uploading - The uploading state.
+   * @param {function(boolean): void} setUploading - State setter for the uploading status.
+   * @param {function(string): void} onUpload - Callback for when an image is uploaded.
+   * @param {function(): void} onReset - Callback for when an image is reset.
+   */
   const renderUploadSection = (
     title,
     image,
@@ -57,7 +104,7 @@ export function Interface({
     onUpload,
     onReset
   ) => (
-    <Card variant="outlined" sx={{ mb: 2 }}>
+    <StyledCard variant="outlined">
       <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
         <Typography
           variant="subtitle2"
@@ -108,26 +155,16 @@ export function Interface({
             </IconButton>
           </Box>
         ) : (
-          <Button
+          <UploadButton
             variant="outlined"
             component="label"
             fullWidth
             startIcon={uploading ? <CircularProgress size={16} /> : <CloudUploadIcon />}
-            sx={{
-              py: 1.5,
-              backgroundColor: "#f7f9fc",
-              border: "1px dashed #ccc",
-              "&:hover": {
-                border: "1px dashed #007bff",
-                backgroundColor: "#e3f2fd",
-              },
-              borderRadius: 1,
-            }}
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
           >
             {uploading ? "Uploading..." : "Upload Image"}
-          </Button>
+          </UploadButton>
         )}
         <input
           type="file"
@@ -148,50 +185,62 @@ export function Interface({
           variant="caption"
           sx={{ mt: 1, display: "block", color: "text.secondary" }}
         >
-          JPG, PNG, or GIF. Max 5MB.
+          JPG, PNG. Max 5MB.
         </Typography>
       </CardContent>
-    </Card>
+    </StyledCard>
   );
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+    <Box sx={{ 
+      p: 3, 
+      backgroundColor: '#f5f5f5', 
+      minHeight: '100vh',
+    }}>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, color: '#333' }}>
         Deep Freezer Customization
       </Typography>
 
-      {renderUploadSection(
-        "Front Panel",
-        frontImage,
-        setFrontImage,
-        frontInputRef,
-        uploadingFront,
-        setUploadingFront,
-        onFrontTextureUpload,
-        onFrontTextureReset
-      )}
+      <Grid container spacing={3}>
+        <Grid item xs={12} sm={6} md={4}>
+          {renderUploadSection(
+            "Front Panel",
+            frontImage,
+            setFrontImage,
+            frontInputRef,
+            uploadingFront,
+            setUploadingFront,
+            onFrontTextureUpload,
+            onFrontTextureReset
+          )}
+        </Grid>
 
-      {renderUploadSection(
-        "Left Panel",
-        leftImage,
-        setLeftImage,
-        leftInputRef,
-        uploadingLeft,
-        setUploadingLeft,
-        onLeftTextureUpload,
-        onLeftTextureReset
-      )}
+        <Grid item xs={12} sm={6} md={4}>
+          {renderUploadSection(
+            "Left Panel",
+            leftImage,
+            setLeftImage,
+            leftInputRef,
+            uploadingLeft,
+            setUploadingLeft,
+            onLeftTextureUpload,
+            onLeftTextureReset
+          )}
+        </Grid>
 
-      {renderUploadSection(
-        "Right Panel",
-        rightImage,
-        setRightImage,
-        rightInputRef,
-        uploadingRight,
-        setUploadingRight,
-        onRightTextureUpload,
-        onRightTextureReset
-      )}
+        <Grid item xs={12} sm={6} md={4}>
+          {renderUploadSection(
+            "Right Panel",
+            rightImage,
+            setRightImage,
+            rightInputRef,
+            uploadingRight,
+            setUploadingRight,
+            onRightTextureUpload,
+            onRightTextureReset
+          )}
+        </Grid>
+      </Grid>
     </Box>
   );
 }

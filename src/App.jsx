@@ -2,13 +2,16 @@ import React, { useRef, useState, useEffect } from "react";
 import { Box, Paper, Typography, IconButton } from "@mui/material";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 
+// Interfaces (UI controls for each model)
 import { Interface as UnderCounterInterface } from "./components/UnderCounterInterface";
 import { Interface as VisicoolerInterface } from "./components/VisicoolerInterface";
 import { Interface as DeepFridgeInterface } from "./components/DeepFridgeInterface";
 
+// React-Three-Fiber
 import { Canvas, useThree } from "@react-three/fiber";
 import { Html, useProgress } from "@react-three/drei";
 
+// 3D Experiences (scenes for each model)
 import { Experience as UnderCounterExperience } from "./components/UnderCounterExperience";
 import { Experience as VisicoolerExperience } from "./components/VisicoolerExperience";
 import { Experience as DeepFridgeExperience } from "./components/DeepFridgeExperience";
@@ -17,46 +20,29 @@ import { Loader } from "./components/Loader";
 // ---------------- GL Provider ----------------
 function GLProvider({ setGL }) {
   const { gl } = useThree();
-  React.useEffect(() => setGL(gl), [gl, setGL]);
+  useEffect(() => setGL(gl), [gl, setGL]);
   return null;
 }
-function CameraShift({ sidebarOpen }) {
-  const { camera } = useThree();
 
-  useEffect(() => {
-    if (sidebarOpen) {
-      camera.position.set(4, 2, 8);
-    } else {
-      camera.position.set(4, 4, 8);
-    }
-    camera.updateProjectionMatrix();
-  }, [sidebarOpen, camera]);
-
-  return null;
-}
-// ---------------- Camera Fix ----------------
+// ---------------- Camera Aspect Fix ----------------
 function CameraAspectFix() {
   const { camera, gl } = useThree();
-
-  React.useEffect(() => {
+  useEffect(() => {
     const resizeCamera = () => {
       const canvas = gl.domElement;
       camera.aspect = canvas.clientWidth / canvas.clientHeight;
       camera.updateProjectionMatrix();
     };
-
     resizeCamera();
     window.addEventListener("resize", resizeCamera);
     return () => window.removeEventListener("resize", resizeCamera);
   }, [camera, gl]);
-
   return null;
 }
 
 // ---------------- Download Button ----------------
 function DownloadButton({ gl }) {
   if (!gl) return null;
-
   const handleDownload = () => {
     const dataURL = gl.domElement.toDataURL("image/png");
     const link = document.createElement("a");
@@ -64,7 +50,6 @@ function DownloadButton({ gl }) {
     link.download = "model-view.png";
     link.click();
   };
-
   return (
     <button
       onClick={handleDownload}
@@ -105,7 +90,6 @@ function CanvasContent({
   colorShading,
 }) {
   const { progress } = useProgress();
-
   return (
     <>
       {progress < 100 && (
@@ -113,7 +97,6 @@ function CanvasContent({
           <Loader progress={progress} />
         </Html>
       )}
-
       {modelType === "undercounter" && (
         <UnderCounterExperience
           ref={underCounterRef}
@@ -123,7 +106,6 @@ function CanvasContent({
           doorType={doorType}
         />
       )}
-
       {modelType === "visicooler" && (
         <VisicoolerExperience
           ref={visiCoolerRef}
@@ -139,7 +121,6 @@ function CanvasContent({
           colorShading={colorShading}
         />
       )}
-
       {modelType === "deepfridge" && (
         <DeepFridgeExperience
           ref={deepFridgeRef}
@@ -152,7 +133,139 @@ function CanvasContent({
   );
 }
 
-// ---------------- App Component ----------------
+// ---------------- Header Dropdown ----------------
+const models = [
+  { value: "undercounter", name: "Undercounter", img: "/images/undercounter.png" },
+  { value: "visicooler", name: "Visicooler", img: "/images/visicooler.png" },
+  { value: "deepfridge", name: "Deep Fridge", img: "/images/deepfridger.png" },
+];
+
+function HeaderDropdown({ modelType, setModelType, panelWidth }) {
+  const [open, setOpen] = useState(false);
+  const selectedModel = models.find((m) => m.value === modelType);
+  const availableModels = models.filter((m) => m.value !== modelType);
+
+  return (
+    <Box
+      sx={{ position: "relative", width: "100%" }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          padding: "14px 14px",
+          borderRadius: 2,
+          background: "#ffffff",
+          cursor: "pointer",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          transition: "all 0.25s ease",
+          "&:hover": { transform: "scale(1.02)", background: "#fafafa" },
+        }}
+      >
+        <Box
+          component="img"
+          src={selectedModel.img}
+          alt={selectedModel.name}
+          sx={{
+            width: 75,
+            height: 55,
+            objectFit: "contain",
+            borderRadius: 2,
+            backgroundColor: "#f9f9f936",
+          }}
+        />
+        <Typography
+          sx={{
+            fontWeight: 700,
+            fontSize: "1.2rem",
+            color: "#222",
+            letterSpacing: "0.5px",
+          }}
+        >
+          {selectedModel.name}
+        </Typography>
+      </Box>
+
+      {open && (
+        <Paper
+          sx={{
+            position: "absolute",
+            top: "100%",
+            left: -6,
+            width: panelWidth - 70,
+            maxHeight: "none",
+            overflowY: "hidden",
+            mt: 0.6,
+            zIndex: 1000,
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+            padding: 2,
+            borderRadius: 3,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+            backgroundColor: "#fff",
+            animation: "fadeIn 0.25s ease-in-out",
+            "@keyframes fadeIn": {
+              from: { opacity: 0, transform: "translateY(-10px)" },
+              to: { opacity: 1, transform: "translateY(0)" },
+            },
+          }}
+        >
+          {availableModels.map((model) => (
+            <Box
+              key={model.value}
+              onClick={() => {
+                setModelType(model.value);
+                setOpen(false);
+              }}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 3,
+                padding: "10px 14px",
+                borderRadius: 2,
+                cursor: "pointer",
+                transition: "all 0.25s ease",
+                "&:hover": {
+                  backgroundColor: "#f0f4ff",
+                  transform: "translateX(4px)",
+                },
+              }}
+            >
+              <Box
+                component="img"
+                src={model.img}
+                alt={model.name}
+                sx={{
+                  width: 65,
+                  height: 65,
+                  objectFit: "contain",
+                  borderRadius: 2,
+                  backgroundColor: "#fafafa",
+                }}
+              />
+              <Typography
+                sx={{
+                  fontWeight: 600,
+                  fontSize: "1rem",
+                  color: "#333",
+                  letterSpacing: "0.3px",
+                }}
+              >
+                {model.name}
+              </Typography>
+            </Box>
+          ))}
+        </Paper>
+      )}
+    </Box>
+  );
+}
+
+// ---------------- App ----------------
 export default function App() {
   const underCounterRef = useRef();
   const visiCoolerRef = useRef();
@@ -167,31 +280,34 @@ export default function App() {
     ledVisible: false,
   });
   const [doorType, setDoorType] = useState("solid");
-
   const [canopyColor, setCanopyColor] = useState(null);
   const [bottomBorderColor, setBottomBorderColor] = useState(null);
   const [doorColor, setDoorColor] = useState(null);
   const [topPanelColor, setTopPanelColor] = useState(null);
   const [louverColor, setLouverColor] = useState(null);
-  const [colorShading, setColorShading] = useState({ canopy: 0, bottom: 0, door: 0, toppanel: 0, louver: 0 });
-
+  const [colorShading, setColorShading] = useState({
+    canopy: 0, bottom: 0, door: 0, toppanel: 0, louver: 0,
+  });
   const [open, setOpen] = useState(true);
 
   const handleDoorChange = (count, position) => {
-    const ref = modelType === "undercounter" ? underCounterRef.current
-      : modelType === "visicooler" ? visiCoolerRef.current
-      : deepFridgeRef.current;
+    const ref =
+      modelType === "undercounter"
+        ? underCounterRef.current
+        : modelType === "visicooler"
+        ? visiCoolerRef.current
+        : deepFridgeRef.current;
     if (ref?.setDoorSelection) ref.setDoorSelection(count, position);
   };
 
-  const handleMaterialChange = (prop, value) => setMaterialProps(prev => ({ ...prev, [prop]: value }));
+  const handleMaterialChange = (prop, value) =>
+    setMaterialProps((prev) => ({ ...prev, [prop]: value }));
 
   const handleLEDToggle = (visible) => {
-    setLightSettings(prev => ({ ...prev, ledVisible: visible }));
+    setLightSettings((prev) => ({ ...prev, ledVisible: visible }));
     visiCoolerRef.current?.toggleLEDLight1001?.(visible);
   };
-  
-  // New handler functions for Deep Fridge
+
   const handleFrontTextureUpload = (url) => deepFridgeRef.current?.applyFrontTexture(url);
   const handleFrontTextureReset = () => deepFridgeRef.current?.resetFront();
   const handleLeftTextureUpload = (url) => deepFridgeRef.current?.applyLeftTexture(url);
@@ -199,28 +315,29 @@ export default function App() {
   const handleRightTextureUpload = (url) => deepFridgeRef.current?.applyRightTexture(url);
   const handleRightTextureReset = () => deepFridgeRef.current?.resetRight();
 
+  const panelWidth = open ? 500 : 0;
+
   return (
     <Box sx={{ display: "flex", flexDirection: "row-reverse", height: "100vh", width: "100vw" }}>
-      {/* Interface Panel */}
+      {/* Side Panel */}
       <Paper
         elevation={3}
         sx={{
-          width: open ? 500 : 0,
+          width: panelWidth,
           transition: "width 0.3s ease",
           flexShrink: 0,
           display: "flex",
           flexDirection: "column",
-          background: "linear-gradient(160deg, #f7f9fc 0%, #e9edf3 100%)",
+          background: "linear-gradient(160deg, #ffffffff 0%, #e9edf3 100%)",
           borderLeft: open ? "1px solid rgba(0,0,0,0.08)" : "none",
           position: "relative",
         }}
       >
-        {/* Toggle Button */}
         <IconButton
           onClick={() => setOpen(!open)}
           sx={{
             position: "absolute",
-            left: open ? -45 : -45,
+            left: -45,
             top: "50%",
             transform: "translateY(-50%)",
             background: "#fff",
@@ -235,22 +352,32 @@ export default function App() {
         {open && (
           <>
             {/* Header */}
-            <Box sx={{ px: 3, py: 2, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "2px solid #f28315", background: "#fff", boxShadow: "0 2px 6px rgba(0,0,0,0.1)", borderRadius: "12px 12px 0 0" }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: "#f28315", userSelect: "none", letterSpacing: 1 }}>Cabinet Configurator</Typography>
-              <select
-                value={modelType}
-                onChange={(e) => setModelType(e.target.value)}
-                style={{ padding: "10px 20px", borderRadius: "30px", border: "2px solid #565350ff", backgroundColor: "#fff", color: "#e08f4cff", fontWeight: 600, fontSize: "1rem", cursor: "pointer", boxShadow: "0 4px 8px rgba(242, 131, 21, 0.25)", minWidth: "160px" }}
-              >
-                <option value="undercounter">Undercounter</option>
-                <option value="visicooler">Visicooler</option>
-                <option value="deepfridge">Deep Fridge</option>
-              </select>
+            <Box
+              sx={{
+                px: 3,
+                py: 2,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-start",
+                borderBottom: "2px solid #f28315",
+                background: "#fff",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+                borderRadius: "12px 12px 0 0",
+              }}
+            >
+              <HeaderDropdown modelType={modelType} setModelType={setModelType} panelWidth={panelWidth} />
             </Box>
 
-            {/* Interface Body */}
+            {/* Controls */}
             <Box sx={{ p: 3, height: "100%", overflowY: "auto" }}>
-              {modelType === "undercounter" && <UnderCounterInterface onDoorChange={handleDoorChange} onMaterialChange={handleMaterialChange} onDoorTypeChange={setDoorType} doorType={doorType} />}
+              {modelType === "undercounter" && (
+                <UnderCounterInterface
+                  onDoorChange={handleDoorChange}
+                  onMaterialChange={handleMaterialChange}
+                  onDoorTypeChange={setDoorType}
+                  doorType={doorType}
+                />
+              )}
               {modelType === "visicooler" && (
                 <VisicoolerInterface
                   onLEDToggle={handleLEDToggle}
@@ -276,14 +403,14 @@ export default function App() {
                 />
               )}
               {modelType === "deepfridge" && (
-                <DeepFridgeInterface 
-                  onMaterialChange={handleMaterialChange} 
-                  onFrontTextureUpload={handleFrontTextureUpload} 
+                <DeepFridgeInterface
+                  onMaterialChange={handleMaterialChange}
+                  onFrontTextureUpload={handleFrontTextureUpload}
                   onFrontTextureReset={handleFrontTextureReset}
-                  onLeftTextureUpload={handleLeftTextureUpload} // Added prop
-                  onLeftTextureReset={handleLeftTextureReset} // Added prop
-                  onRightTextureUpload={handleRightTextureUpload} // Added prop
-                  onRightTextureReset={handleRightTextureReset} // Added prop
+                  onLeftTextureUpload={handleLeftTextureUpload}
+                  onLeftTextureReset={handleLeftTextureReset}
+                  onRightTextureUpload={handleRightTextureUpload}
+                  onRightTextureReset={handleRightTextureReset}
                 />
               )}
             </Box>
@@ -291,12 +418,15 @@ export default function App() {
         )}
       </Paper>
 
-      {/* Scene Panel */}
+      {/* 3D Scene */}
       <Box sx={{ flex: 1, position: "relative" }}>
-        <Canvas shadows camera={{ position: [4, 4, 8], fov: 35 }} gl={{ preserveDrawingBuffer: true }}>
+        <Canvas
+          shadows
+          camera={{ position: [4, 4, 8], fov: 35 }}
+          gl={{ preserveDrawingBuffer: true }}
+        >
           <GLProvider setGL={setGL} />
           <CameraAspectFix />
-          <CameraShift sidebarOpen={open} />
           <CanvasContent
             modelType={modelType}
             materialProps={materialProps}

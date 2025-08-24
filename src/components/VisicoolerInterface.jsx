@@ -15,13 +15,73 @@ import {
   Slider,
   Card,
   CardContent,
-  Divider
+  Divider,
+  Grid,
+  Paper,
+  Popover
 } from "@mui/material";
+import { styled } from '@mui/material/styles';
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CloseIcon from "@mui/icons-material/Close";
 import PaletteIcon from "@mui/icons-material/Palette";
 import ImageIcon from "@mui/icons-material/Image";
 import ViewInArIcon from "@mui/icons-material/ViewInAr";
+import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
+import { SketchPicker } from 'react-color';
+
+const StyledCard = styled(Card)(({ theme }) => ({
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  transition: 'all 0.2s ease-in-out',
+  '&:hover': {
+    boxShadow: theme.shadows[4],
+  }
+}));
+
+const SmallSelect = styled(Select)(({ theme }) => ({
+  fontSize: '0.75rem',
+  '& .MuiSelect-select': {
+    paddingTop: '6px',
+    paddingBottom: '6px',
+  }
+}));
+
+const SmallButton = styled(Button)(({ theme }) => ({
+  fontSize: '0.7rem',
+  padding: '4px 8px',
+  minWidth: 'auto'
+}));
+
+const SmallSlider = styled(Slider)(({ theme }) => ({
+  padding: '8px 0',
+  '& .MuiSlider-thumb': {
+    width: 12,
+    height: 12,
+  }
+}));
+
+const SectionHeader = styled(Typography)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  marginBottom: '8px',
+  fontWeight: 600,
+  color: theme.palette.primary.main,
+  fontSize: '0.9rem'
+}));
+
+const ColorButton = styled(Button)(({ theme, backgroundcolor }) => ({
+  backgroundColor: backgroundcolor || '#f0f0f0',
+  color: backgroundcolor ? '#fff' : '#000',
+  border: backgroundcolor ? 'none' : '1px dashed #ccc',
+  width: '100%',
+  height: '30px',
+  minWidth: 'auto',
+  fontSize: '0.75rem',
+  '&:hover': {
+    backgroundColor: backgroundcolor || '#e0e0e0',
+  }
+}));
 
 export const Interface = ({
   onLEDToggle,
@@ -68,21 +128,25 @@ export const Interface = ({
   const [uploadingLouver, setUploadingLouver] = useState(false);
   const [louverImage, setLouverImage] = useState(null);
 
+  const [colorPickerOpen, setColorPickerOpen] = useState({
+    canopy: false,
+    bottom: false,
+    door: false,
+    toppanel: false,
+    louver: false
+  });
+  const [colorPickerAnchor, setColorPickerAnchor] = useState({
+    canopy: null,
+    bottom: null,
+    door: null,
+    toppanel: null,
+    louver: null
+  });
+
   const canopyInputRef = useRef(null);
   const sp1InputRef = useRef(null);
   const sp2InputRef = useRef(null);
   const louverInputRef = useRef(null);
-
-  const colorOptions = [
-    { label: "No Color", value: null },
-    { label: "Red", value: "#ff4c4c" },
-    { label: "Blue", value: "#4c6eff" },
-    { label: "Green", value: "#4cff88" },
-    { label: "Orange", value: "#ffa500" },
-    { label: "Black", value: "#333333" },
-    { label: "White", value: "#ffffff" },
-    { label: "Silver", value: "#c0c0c0" },
-  ];
 
   const handleARRedirect = () => {
     window.location.href = "AR.html";
@@ -120,7 +184,7 @@ export const Interface = ({
   };
 
   const handleShadingChange = (type, value) => {
-    const newShading = { ...colorShading, [type]: value };
+    const newShading = { ...colorShading, [type]: Math.round(value) };
     setColorShading(newShading);
     onColorShadingChange?.(newShading);
   };
@@ -152,93 +216,116 @@ export const Interface = ({
     reader.readAsDataURL(file);
   };
 
-  const renderColorSection = (title, selectedColor, type) => (
-    <Card variant="outlined" sx={{ mb: 2 }}>
-      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center' }}>
-          <PaletteIcon sx={{ mr: 1, fontSize: 18 }} /> {title}
-        </Typography>
+  const handleColorPickerOpen = (type, event) => {
+    setColorPickerOpen({ ...colorPickerOpen, [type]: true });
+    setColorPickerAnchor({ ...colorPickerAnchor, [type]: event.currentTarget });
+  };
 
-        <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-          <Select
-            value={selectedColor ?? ""}
-            onChange={(e) => handleColorChange(type, e.target.value || null)}
-            displayEmpty
-            sx={{
-              borderRadius: 1,
-              backgroundColor: "#f7f9fc",
-              fontSize: 14,
-              "& .MuiSelect-select": { py: 1, px: 1.5 },
-              "& .MuiOutlinedInput-notchedOutline": { borderColor: "#ddd" },
-              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#007bff" },
+  const handleColorPickerClose = (type) => {
+    setColorPickerOpen({ ...colorPickerOpen, [type]: false });
+    setColorPickerAnchor({ ...colorPickerAnchor, [type]: null });
+  };
+
+  const handleColorPickerChange = (type, color) => {
+    handleColorChange(type, color.hex);
+  };
+
+  const handleNoColor = (type) => {
+    handleColorChange(type, null);
+    handleColorPickerClose(type);
+  };
+
+  const renderColorSection = (title, selectedColor, type) => (
+    <StyledCard variant="outlined">
+      <CardContent sx={{ p: 1, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, display: 'flex', alignItems: 'center', fontSize: '0.75rem' }}>
+          <PaletteIcon sx={{ mr: 0.5, fontSize: '0.9rem' }} /> {title}
+        </Typography>
+        
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <ColorButton
+            backgroundcolor={selectedColor || undefined}
+            onClick={(e) => handleColorPickerOpen(type, e)}
+          >
+            {selectedColor ? 'Change Color' : 'Select Color'}
+          </ColorButton>
+          
+          <Popover
+            open={colorPickerOpen[type]}
+            anchorEl={colorPickerAnchor[type]}
+            onClose={() => handleColorPickerClose(type)}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'left',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'left',
             }}
           >
-            {colorOptions.map((c) => (
-              <MenuItem key={c.label} value={c.value ?? ""}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                  <Box
-                    sx={{
-                      width: 16,
-                      height: 16,
-                      borderRadius: "50%",
-                      backgroundColor: c.value || "#ffffff",
-                      border: c.value ? "1px solid #ccc" : "1px dashed #aaa",
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                    }}
-                  />
-                  <Typography sx={{ fontSize: 13 }}>{c.label}</Typography>
-                </Box>
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
+            <Box sx={{ p: 1 }}>
+              <SketchPicker
+                color={selectedColor || '#fff'}
+                onChange={(color) => handleColorPickerChange(type, color)}
+              />
+              <Button
+                fullWidth
+                variant="outlined"
+                sx={{ mt: 1 }}
+                onClick={() => handleNoColor(type)}
+              >
+                No Color
+              </Button>
+            </Box>
+          </Popover>
+        </Box>
+        
         {selectedColor && (
           <>
-            <Typography variant="caption" sx={{ display: 'block', mb: 0.5, color: 'text.secondary' }}>
+            <Typography variant="caption" sx={{ display: 'block', mt: 1, mb: 0.5, color: 'text.secondary', fontSize: '0.65rem' }}>
               Adjust Shading
             </Typography>
-            <Slider
+            <Typography variant="caption" sx={{ display: 'block', mb: 0.5, textAlign: 'center', fontWeight: 'bold' }}>
+              {`Shading: ${colorShading[type]}%`}
+            </Typography>
+            <SmallSlider
               value={colorShading[type]}
               onChange={(e, value) => handleShadingChange(type, value)}
               min={-100}
               max={100}
-              sx={{ mb: 1 }}
-              size="small"
             />
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem' }}>
                 Darker
               </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem' }}>
                 Lighter
               </Typography>
             </Box>
           </>
         )}
       </CardContent>
-    </Card>
+    </StyledCard>
   );
 
   const renderUploadSection = (title, image, setImage, inputRef, uploading, setUploading, onUpload, onReset, accept = "image/*") => (
-    <Card variant="outlined" sx={{ mb: 2 }}>
-      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center' }}>
-          <ImageIcon sx={{ mr: 1, fontSize: 18 }} /> {title}
+    <StyledCard variant="outlined">
+      <CardContent sx={{ p: 1, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, display: 'flex', alignItems: 'center', fontSize: '0.75rem' }}>
+          <ImageIcon sx={{ mr: 0.5, fontSize: '0.9rem' }} /> {title}
         </Typography>
 
         {image ? (
-          <Box sx={{ position: "relative", mb: 1.5 }}>
+          <Box sx={{ position: "relative", mb: 1, flexGrow: 1 }}>
             <Box
               component="img"
               src={image}
               sx={{
                 width: "100%",
-                height: 120,
+                height: "80px",
                 objectFit: "cover",
-                borderRadius: 1,
+                borderRadius: 0.5,
                 border: "1px solid #e0e0e0",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
               }}
               alt={title}
             />
@@ -251,36 +338,38 @@ export const Interface = ({
               }}
               sx={{
                 position: "absolute",
-                top: 6,
-                right: 6,
+                top: 4,
+                right: 4,
                 backgroundColor: "rgba(0,0,0,0.7)",
                 color: "white",
                 "&:hover": { backgroundColor: "rgba(0,0,0,0.9)" },
-                width: 28,
-                height: 28
+                width: 20,
+                height: 20
               }}
             >
               <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
         ) : (
-          <Button
-            variant="outlined"
-            component="label"
-            fullWidth
-            startIcon={uploading ? <CircularProgress size={16} /> : <CloudUploadIcon />}
-            sx={{
-              py: 1.5,
-              backgroundColor: "#f7f9fc",
-              border: "1px dashed #ccc",
-              "&:hover": { border: "1px dashed #007bff", backgroundColor: "#e3f2fd" },
-              borderRadius: 1
-            }}
-            onClick={() => inputRef.current?.click()}
-            disabled={uploading}
-          >
-            {uploading ? "Uploading..." : "Upload Image"}
-          </Button>
+          <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <SmallButton
+              variant="outlined"
+              component="label"
+              fullWidth
+              startIcon={uploading ? <CircularProgress size={12} /> : <CloudUploadIcon sx={{ fontSize: '0.9rem' }} />}
+              sx={{
+                backgroundColor: "#f7f9fc",
+                border: "1px dashed #ccc",
+                "&:hover": { border: "1px dashed #007bff", backgroundColor: "#e3f2fd" },
+                borderRadius: 0.5,
+                py: 1
+              }}
+              onClick={() => inputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? "Uploading..." : "Upload"}
+            </SmallButton>
+          </Box>
         )}
         <input
           type="file"
@@ -297,250 +386,307 @@ export const Interface = ({
           accept={accept}
           hidden
         />
-        <Typography variant="caption" sx={{ mt: 1, display: "block", color: "text.secondary" }}>
+        <Typography variant="caption" sx={{ mt: 0.5, display: "block", color: "text.secondary", fontSize: '0.6rem' }}>
           JPG, PNG, or GIF. Max 5MB.
         </Typography>
       </CardContent>
-    </Card>
+    </StyledCard>
   );
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <Card variant="outlined">
-        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-          <Button
-            variant="contained"
-            fullWidth
-            startIcon={<ViewInArIcon />}
-            onClick={handleARRedirect}
-            sx={{
-              py: 1.5,
-              backgroundColor: "#1e90ff",
-              "&:hover": { backgroundColor: "#0d7acc" }
-            }}
-          >
-            View in AR
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card variant="outlined">
-        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+    <Box sx={{ 
+      p: 1.5, 
+      height: '100vh', 
+      display: 'flex', 
+      flexDirection: 'column',
+      overflow: 'hidden'
+    }}>
+      {/* Header section */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, flexShrink: 0 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
+          Customization Panel
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <FormControlLabel
             control={
               <Switch
+                size="small"
                 checked={ledVisible}
                 onChange={handleLED}
-                sx={{
-                  "& .MuiSwitch-switchBase.Mui-checked": { color: "#007bff" },
-                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { backgroundColor: "#007bff" },
-                  "& .MuiSwitch-track": { borderRadius: 20 },
-                }}
               />
             }
-            label={<Typography sx={{ fontWeight: 600, fontSize: 14 }}>LED Lighting</Typography>}
+            label={<Typography sx={{ fontSize: '0.8rem' }}>LED</Typography>}
           />
-        </CardContent>
-      </Card>
-
-      {renderUploadSection(
-        "Canopy Image",
-        canopyImage,
-        setCanopyImage,
-        canopyInputRef,
-        uploadingCanopy,
-        setUploadingCanopy,
-        onCanopyTextureUpload,
-        onCanopyTextureReset
-      )}
-
-      {renderUploadSection(
-        "Side Panel 1",
-        sidePanel1Image,
-        setSidePanel1Image,
-        sp1InputRef,
-        uploadingSP1,
-        setUploadingSP1,
-        onSidePanel1TextureUpload,
-        onSidePanel1TextureReset
-      )}
-
-      {renderUploadSection(
-        "Side Panel 2",
-        sidePanel2Image,
-        setSidePanel2Image,
-        sp2InputRef,
-        uploadingSP2,
-        setUploadingSP2,
-        onSidePanel2TextureUpload,
-        onSidePanel2TextureReset
-      )}
-
-      <Card variant="outlined">
-        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
-            Louver Customization
-          </Typography>
-
-          <ToggleButtonGroup
-            value={louverMode}
-            exclusive
-            onChange={handleLouverModeChange}
-            aria-label="louver customization mode"
-            fullWidth
-            sx={{ mb: 2 }}
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<ViewInArIcon />}
+            onClick={handleARRedirect}
+            sx={{ ml: 1, fontSize: '0.75rem', py: 0.5 }}
           >
-            <ToggleButton value="color" sx={{ py: 0.8, fontSize: 13 }}>
-              Color
-            </ToggleButton>
-            <ToggleButton value="image" sx={{ py: 0.8, fontSize: 13 }}>
-              Image
-            </ToggleButton>
-          </ToggleButtonGroup>
+            View in AR
+          </Button>
+        </Box>
+      </Box>
 
-          {louverMode === "color" ? (
-            <>
-              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-                <Select
-                  value={louverColor ?? ""}
-                  onChange={(e) => handleColorChange("louver", e.target.value || null)}
-                  displayEmpty
-                  sx={{
-                    borderRadius: 1,
-                    backgroundColor: "#f7f9fc",
-                    fontSize: 14,
-                    "& .MuiSelect-select": { py: 1, px: 1.5 },
-                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "#ddd" },
-                    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#007bff" },
-                  }}
-                >
-                  {colorOptions.map((c) => (
-                    <MenuItem key={c.label} value={c.value ?? ""}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Box
-                          sx={{
-                            width: 16,
-                            height: 16,
-                            borderRadius: "50%",
-                            backgroundColor: c.value || "#ffffff",
-                            border: c.value ? "1px solid #ccc" : "1px dashed #aaa",
-                            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                          }}
-                        />
-                        <Typography sx={{ fontSize: 13 }}>{c.label}</Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              {louverColor && (
-                <>
-                  <Typography variant="caption" sx={{ display: 'block', mb: 0.5, color: 'text.secondary' }}>
-                    Adjust Shading
-                  </Typography>
-                  <Slider
-                    value={colorShading.louver}
-                    onChange={(e, value) => handleShadingChange("louver", value)}
-                    min={-100}
-                    max={100}
-                    sx={{ mb: 1 }}
-                    size="small"
-                  />
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                      Darker
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                      Lighter
-                    </Typography>
-                  </Box>
-                </>
+      {/* Scrollable content area */}
+      <Box sx={{ 
+        flex: 1, 
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch', // Enable momentum scrolling on iOS
+        '&::-webkit-scrollbar': {
+          width: '6px',
+        },
+        '&::-webkit-scrollbar-track': {
+          background: '#f1f1f1',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          background: '#c1c1c1',
+          borderRadius: '4px',
+        },
+        '&::-webkit-scrollbar-thumb:hover': {
+          background: '#a1a1a1',
+        }
+      }}>
+        {/* Image Customization Section */}
+        <Box sx={{ mb: 2 }}>
+          <SectionHeader>
+            <ImageIcon sx={{ mr: 1, fontSize: '1rem' }} /> Image Customization
+          </SectionHeader>
+          
+          {/* Three image boxes in a single row */}
+          <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+            <Box sx={{ flex: 1 }}>
+              {renderUploadSection(
+                "Canopy",
+                canopyImage,
+                setCanopyImage,
+                canopyInputRef,
+                uploadingCanopy,
+                setUploadingCanopy,
+                onCanopyTextureUpload,
+                onCanopyTextureReset
               )}
-            </>
-          ) : (
-            <>
-              {louverImage ? (
-                <Box sx={{ position: "relative", mb: 1.5 }}>
-                  <Box
-                    component="img"
-                    src={louverImage}
-                    sx={{
-                      width: "100%",
-                      height: 120,
-                      objectFit: "cover",
-                      borderRadius: 1,
-                      border: "1px solid #e0e0e0",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-                    }}
-                    alt="Louver texture"
-                  />
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setLouverImage(null);
-                      if (louverInputRef.current) louverInputRef.current.value = "";
-                      onLouverTextureReset?.();
-                    }}
-                    sx={{
-                      position: "absolute",
-                      top: 6,
-                      right: 6,
-                      backgroundColor: "rgba(0,0,0,0.7)",
-                      color: "white",
-                      "&:hover": { backgroundColor: "rgba(0,0,0,0.9)" },
-                      width: 28,
-                      height: 28
-                    }}
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-              ) : (
-                <Button
-                  variant="outlined"
-                  component="label"
+            </Box>
+            
+            <Box sx={{ flex: 1 }}>
+              {renderUploadSection(
+                "Side Panel 1",
+                sidePanel1Image,
+                setSidePanel1Image,
+                sp1InputRef,
+                uploadingSP1,
+                setUploadingSP1,
+                onSidePanel1TextureUpload,
+                onSidePanel1TextureReset
+              )}
+            </Box>
+            
+            <Box sx={{ flex: 1 }}>
+              {renderUploadSection(
+                "Side Panel 2",
+                sidePanel2Image,
+                setSidePanel2Image,
+                sp2InputRef,
+                uploadingSP2,
+                setUploadingSP2,
+                onSidePanel2TextureUpload,
+                onSidePanel2TextureReset
+              )}
+            </Box>
+          </Box>
+          
+          {/* Full-width Louver section */}
+          <Box sx={{ mt: 1 }}>
+            <StyledCard variant="outlined">
+              <CardContent sx={{ p: 1.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center', fontSize: '0.75rem' }}>
+                  <ImageIcon sx={{ mr: 0.5, fontSize: '0.9rem' }} /> Louver Customization
+                </Typography>
+                
+                <ToggleButtonGroup
+                  value={louverMode}
+                  exclusive
+                  onChange={handleLouverModeChange}
+                  aria-label="louver customization mode"
                   fullWidth
-                  startIcon={uploadingLouver ? <CircularProgress size={16} /> : <CloudUploadIcon />}
-                  sx={{
-                    py: 1.5,
-                    backgroundColor: "#f7f9fc",
-                    border: "1px dashed #ccc",
-                    "&:hover": { border: "1px dashed #007bff", backgroundColor: "#e3f2fd" },
-                    borderRadius: 1
-                  }}
-                  onClick={() => louverInputRef.current?.click()}
-                  disabled={uploadingLouver}
+                  size="small"
+                  sx={{ mb: 1.5 }}
                 >
-                  {uploadingLouver ? "Uploading..." : "Upload Louver Image"}
-                </Button>
-              )}
-              <input
-                type="file"
-                ref={louverInputRef}
-                accept="image/*"
-                hidden
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  readImage(file, (url) => {
-                    setLouverImage(url);
-                    onLouverTextureUpload?.(url);
-                  }, setUploadingLouver);
-                  e.target.value = "";
-                }}
-              />
-            </>
-          )}
-        </CardContent>
-      </Card>
+                  <ToggleButton value="color" sx={{ py: 0.25, fontSize: '0.7rem' }}>
+                    Color
+                  </ToggleButton>
+                  <ToggleButton value="image" sx={{ py: 0.25, fontSize: '0.7rem' }}>
+                    Image
+                  </ToggleButton>
+                </ToggleButtonGroup>
+                
+                {louverMode === "color" ? (
+                  <>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: louverColor ? 1 : 0 }}>
+                      <ColorButton
+                        backgroundcolor={louverColor || undefined}
+                        onClick={(e) => handleColorPickerOpen("louver", e)}
+                      >
+                        {louverColor ? 'Change Color' : 'Select Color'}
+                      </ColorButton>
+                      <Popover
+                        open={colorPickerOpen.louver}
+                        anchorEl={colorPickerAnchor.louver}
+                        onClose={() => handleColorPickerClose("louver")}
+                        anchorOrigin={{
+                          vertical: 'bottom',
+                          horizontal: 'left',
+                        }}
+                        transformOrigin={{
+                          vertical: 'top',
+                          horizontal: 'left',
+                        }}
+                      >
+                        <Box sx={{ p: 1 }}>
+                          <SketchPicker
+                            color={louverColor || '#fff'}
+                            onChange={(color) => handleColorPickerChange("louver", color)}
+                          />
+                          <Button
+                            fullWidth
+                            variant="outlined"
+                            sx={{ mt: 1 }}
+                            onClick={() => handleNoColor("louver")}
+                          >
+                            No Color
+                          </Button>
+                        </Box>
+                      </Popover>
+                    </Box>
+                    {louverColor && (
+                      <>
+                        <Typography variant="caption" sx={{ display: 'block', mt: 1, mb: 0.5, color: 'text.secondary', fontSize: '0.65rem' }}>
+                          Adjust Shading
+                        </Typography>
+                        <Typography variant="caption" sx={{ display: 'block', mb: 0.5, textAlign: 'center', fontWeight: 'bold' }}>
+                          {`Shading: ${colorShading.louver}%`}
+                        </Typography>
+                        <SmallSlider
+                          value={colorShading.louver}
+                          onChange={(e, value) => handleShadingChange("louver", value)}
+                          min={-100}
+                          max={100}
+                        />
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem' }}>
+                            Darker
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.6rem' }}>
+                            Lighter
+                          </Typography>
+                        </Box>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {louverImage ? (
+                      <Box sx={{ position: "relative", mb: 1 }}>
+                        <Box
+                          component="img"
+                          src={louverImage}
+                          sx={{
+                            width: "100%",
+                            height: "80px",
+                            objectFit: "cover",
+                            borderRadius: 0.5,
+                            border: "1px solid #e0e0e0",
+                          }}
+                          alt="Louver texture"
+                        />
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setLouverImage(null);
+                            if (louverInputRef.current) louverInputRef.current.value = "";
+                            onLouverTextureReset?.();
+                          }}
+                          sx={{
+                            position: "absolute",
+                            top: 4,
+                            right: 4,
+                            backgroundColor: "rgba(0,0,0,0.7)",
+                            color: "white",
+                            "&:hover": { backgroundColor: "rgba(0,0,0,0.9)" },
+                            width: 20,
+                            height: 20
+                          }}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    ) : (
+                      <SmallButton
+                        variant="outlined"
+                        component="label"
+                        fullWidth
+                        startIcon={uploadingLouver ? <CircularProgress size={12} /> : <CloudUploadIcon sx={{ fontSize: '0.9rem' }} />}
+                        sx={{
+                          backgroundColor: "#f7f9fc",
+                          border: "1px dashed #ccc",
+                          "&:hover": { border: "1px dashed #007bff", backgroundColor: "#e3f2fd" },
+                          borderRadius: 0.5,
+                          py: 1,
+                          mb: 0.5
+                        }}
+                        onClick={() => louverInputRef.current?.click()}
+                        disabled={uploadingLouver}
+                      >
+                        {uploadingLouver ? "Uploading..." : "Upload Image"}
+                      </SmallButton>
+                    )}
+                    <input
+                      type="file"
+                      ref={louverInputRef}
+                      accept="image/*"
+                      hidden
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        readImage(file, (url) => {
+                          setLouverImage(url);
+                          onLouverTextureUpload?.(url);
+                        }, setUploadingLouver);
+                        e.target.value = "";
+                      }}
+                    />
+                    <Typography variant="caption" sx={{ display: "block", color: "text.secondary", fontSize: '0.6rem' }}>
+                      JPG, PNG, or GIF. Max 5MB.
+                    </Typography>
+                  </>
+                )}
+              </CardContent>
+            </StyledCard>
+          </Box>
+        </Box>
 
-      <Divider sx={{ my: 1 }} />
-
-      {renderColorSection("Canopy Border Color", canopyColor, "canopy")}
-      {renderColorSection("Bottom Border Color", bottomBorderColor, "bottom")}
-      {renderColorSection("Door Color", doorColor, "door")}
-      {renderColorSection("Top Panel Color", topPanelColor, "toppanel")}
+        {/* Color Customization Section */}
+        <Box sx={{ mb: 2 }}>
+          <SectionHeader>
+            <PaletteIcon sx={{ mr: 1, fontSize: '1rem' }} /> Color Customization
+          </SectionHeader>
+          <Grid container spacing={1}>
+            <Grid item xs={6}>
+              {renderColorSection("Canopy Border", canopyColor, "canopy")}
+            </Grid>
+            <Grid item xs={6}>
+              {renderColorSection("Bottom Border", bottomBorderColor, "bottom")}
+            </Grid>
+            <Grid item xs={6}>
+              {renderColorSection("Door", doorColor, "door")}
+            </Grid>
+            <Grid item xs={6}>
+              {renderColorSection("Top Panel", topPanelColor, "toppanel")}
+            </Grid>
+          </Grid>
+        </Box>
+      </Box>
     </Box>
   );
 };
