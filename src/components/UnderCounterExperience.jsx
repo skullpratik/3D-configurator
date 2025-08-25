@@ -124,36 +124,8 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
     setPosition(new THREE.Vector3(0.4, -0.836, 0));
   };
 
-  // Helpers to apply materials
-  const applyBaseMaterialTuning = (obj) => {
-    if (!obj) return;
-    obj.traverse((n) => {
-      if (n.isMesh && n.material) {
-        // Global base look (keep your defaults)
-        n.material.metalness = 1;
-        n.material.roughness = 0.3;
-        n.material.needsUpdate = true;
-      }
-    });
-  };
-
   const isSolidDoorInnerMesh = (meshName) =>
     SOLID_DOOR_MESH_PREFIXES.some((prefix) => meshName?.startsWith(prefix));
-
-  const applySolidDoorMaterialTuning = (obj) => {
-    if (!obj) return;
-    obj.traverse((n) => {
-      if (n.isMesh && n.material && isSolidDoorInnerMesh(n.name)) {
-        // Ensure independent material instance in case of sharing
-        if (!n.material.isMeshStandardMaterial) return;
-        if (n.material.userData?._clonedForDoor !== true) {
-          n.material = n.material.clone();
-          n.material.userData._clonedForDoor = true;
-        }
-   
-      }
-    });
-  };
 
   // Initialize scene and objects
   useEffect(() => {
@@ -161,10 +133,6 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
     threeScene.background = null;
     scene.scale.set(2.5, 2.5, 2.5);
     scene.position.set(0.4, -0.836, 0);
-
-    // One pass only
-    applyBaseMaterialTuning(scene);
-    applySolidDoorMaterialTuning(scene);
 
     scene.traverse((child) => {
       if (!child?.name) return;
@@ -192,7 +160,6 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
       }
     });
 
-    // Keep logo1's initial position
     if (logoRef.current) logoRef.current.position.set(0.522, 0.722, 0.39);
 
     updateActiveObjects();
@@ -261,7 +228,6 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
         }
         gsap.to(obj.rotation, { x: targetRotation.x, y: targetRotation.y, z: targetRotation.z, duration: 0.8, ease: "power2.out" });
 
-        // Rotate Logo2 for Door_03
         if (name === "Door_03" && logo2Ref.current) {
           const targetX = isOpen ? logo2InitialRot.current.x : logo2InitialRot.current.y + THREE.MathUtils.degToRad(90);
           gsap.to(logo2Ref.current.rotation, { x: targetX, duration: 0.8, ease: "power2.out" });
@@ -337,7 +303,7 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
       <ambientLight />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]} receiveShadow>
         <planeGeometry args={[1000, 1000]} />
-        <meshStandardMaterial color="#d8d8d8" roughness={0} metalness={0} visible={false} />
+        <meshStandardMaterial color="#d8d8d8" visible={false} />
       </mesh>
       <ContactShadows position={[-0.01, -0.9, 0]} opacity={0.9} scale={10} blur={2.5} far={45} />
       
@@ -350,6 +316,7 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
         enablePan
         minDistance={0}
         maxDistance={20}
+
         minPolarAngle={Math.PI / 6}
         maxPolarAngle={Math.PI / 2.05}
         target={[0, 0.5, 0]}

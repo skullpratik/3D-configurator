@@ -231,10 +231,11 @@ export const Experience = forwardRef(({
     t.encoding = THREE.sRGBEncoding;
     t.anisotropy = gl.capabilities?.getMaxAnisotropy ? gl.capabilities.getMaxAnisotropy() : 16;
     t.flipY = false;
-    t.offset.y = -0.2;
+    t.offset.y = 0;
+    t.offset.x=-0.25;
     t.center.set(0.5, 0.5);
-    t.rotation = Math.PI / 2;
-    t.repeat.set(0.85, 3);
+    t.rotation = Math.PI ;
+    t.repeat.set(3.2,0.9);
     t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
   };
 
@@ -475,14 +476,32 @@ export const Experience = forwardRef(({
   };
 
   // --- scene setup ---
-  useEffect(() => {
-    if (!scene || !threeScene) return;
+  // --- scene setup ---
+useEffect(() => {
+  if (!scene || !threeScene) return;
 
-    scene.scale.set(2.5, 2.5, 2.5);
-    scene.position.set(positionRef.current.x, positionRef.current.y, positionRef.current.z);
-    scene.traverse(c => { if (c.isMesh && c.name !== "Door") { c.castShadow = true; c.receiveShadow = true; } });
-    if (onAssetLoaded) onAssetLoaded();
-  }, [scene, threeScene, onAssetLoaded]);
+  scene.scale.set(2.5, 2.5, 2.5);
+  scene.position.set(positionRef.current.x, positionRef.current.y, positionRef.current.z);
+  scene.traverse(c => { if (c.isMesh && c.name !== "Door") { c.castShadow = true; c.receiveShadow = true; } });
+
+  // Apply default canopy texture on load
+  if (canopyMeshRef.current && !canopyTextureRef.current) {
+    new THREE.TextureLoader().load("/texture/canopydefault.jpg", (t) => {
+      t.encoding = THREE.sRGBEncoding;
+      t.anisotropy = gl.capabilities?.getMaxAnisotropy ? gl.capabilities.getMaxAnisotropy() : 16;
+      t.flipY = false;
+      t.offset.set(0, -0.45);
+      t.repeat.set(1, 1.9);
+      t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+      canopyTextureRef.current = t;
+      applyCanopyMaterial();
+      console.log("✅ Default canopy texture applied");
+    });
+  }
+
+  if (onAssetLoaded) onAssetLoaded();
+}, [scene, threeScene, onAssetLoaded]);
+
 
   // --- cleanup ---
   useEffect(() => {
