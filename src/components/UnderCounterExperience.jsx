@@ -64,11 +64,11 @@ const positionConfigs = {
 };
 
 // Preload GLTF
-useGLTF.preload("/models/pra.glb");
+useGLTF.preload("/models/undercounter.glb");
 
 export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr", doorType = "solid" }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/pra.glb");
+  const { scene } = useGLTF("/models/undercounter.glb");
   
   const [position, setPosition] = useState(new THREE.Vector3(0.4, -0.836, 0));
   const moveSpeed = 0.05;
@@ -150,10 +150,7 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
           n.material = n.material.clone();
           n.material.userData._clonedForDoor = true;
         }
-        // Your desired solid door metalness/roughness
-        n.material.metalness = 1;  // lower = less mirror-like metal
-        n.material.roughness = 0.2;  // higher = more diffuse
-        n.material.needsUpdate = true;
+   
       }
     });
   };
@@ -266,8 +263,8 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
 
         // Rotate Logo2 for Door_03
         if (name === "Door_03" && logo2Ref.current) {
-          const targetY = isOpen ? logo2InitialRot.current.y : logo2InitialRot.current.y + THREE.MathUtils.degToRad(90);
-          gsap.to(logo2Ref.current.rotation, { y: targetY, duration: 0.8, ease: "power2.out" });
+          const targetX = isOpen ? logo2InitialRot.current.x : logo2InitialRot.current.y + THREE.MathUtils.degToRad(90);
+          gsap.to(logo2Ref.current.rotation, { x: targetX, duration: 0.8, ease: "power2.out" });
         }
 
         doorStates.current[name] = isOpen ? "closed" : "open";
@@ -342,7 +339,7 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
         <planeGeometry args={[1000, 1000]} />
         <meshStandardMaterial color="#d8d8d8" roughness={0} metalness={0} visible={false} />
       </mesh>
-      <ContactShadows position={[-0.02, -0.9, 0]} opacity={0.7} scale={5} blur={2.5} far={15} />
+      <ContactShadows position={[-0.01, -0.9, 0]} opacity={0.9} scale={10} blur={2.5} far={45} />
       
       <OrbitControls
         enableDamping

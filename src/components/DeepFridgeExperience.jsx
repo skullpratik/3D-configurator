@@ -4,14 +4,14 @@ import { Environment, ContactShadows, OrbitControls, useGLTF } from "@react-thre
 import * as THREE from "three";
 import gsap from "gsap";
 
-useGLTF.preload("/models/abcd.glb");
+useGLTF.preload("/models/deepfreezer.glb");
 
 export const Experience = forwardRef(function DeepFridgeExperience(
   { ledEnabled = true, onAssetLoaded },
   ref
 ) {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/abcd.glb");
+  const { scene } = useGLTF("/models/deepfreezer.glb");
 
   const door1Ref = useRef(null);
   const door2Ref = useRef(null);
@@ -51,6 +51,13 @@ export const Experience = forwardRef(function DeepFridgeExperience(
       tex.magFilter = THREE.LinearFilter;
       tex.generateMipmaps = false;
       tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+
+       if (mesh.name === "SidePannelRight") {
+      tex.repeat.set(1, 1);     // scale (increase >1 = zoom in, <1 = tile)
+      tex.offset.set(0.03, -0.04);   // move texture (x, y)
+       // rotate texture (in radians)
+      tex.center.set(0.5, 0.5);  // rotate around center
+    }
 
       const newMaterial = mesh.material.clone();
       newMaterial.map = tex;
