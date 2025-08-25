@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Box, Paper, Typography, IconButton } from "@mui/material";
+import { Box, Paper, Typography, IconButton, Button } from "@mui/material";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 
 import { Interface as UnderCounterInterface } from "./components/UnderCounterInterface";
@@ -77,7 +77,6 @@ function DownloadButton({ gl }) {
 }
 
 // ---------------- Canvas Content ----------------
-// The Loader is moved out of this component.
 function CanvasContent({
   modelType,
   materialProps,
@@ -92,6 +91,10 @@ function CanvasContent({
   topPanelColor,
   louverColor,
   colorShading,
+  canopyTextureUrl,
+  sidePanel1TextureUrl,
+  sidePanel2TextureUrl,
+  louverTextureUrl,
 }) {
   return (
     <>
@@ -117,6 +120,10 @@ function CanvasContent({
           ledVisible={lightSettings.ledVisible}
           louverColor={louverColor}
           colorShading={colorShading}
+          canopyTextureUrl={canopyTextureUrl}
+          sidePanel1TextureUrl={sidePanel1TextureUrl}
+          sidePanel2TextureUrl={sidePanel2TextureUrl}
+          louverTextureUrl={louverTextureUrl}
         />
       )}
       {modelType === "deepfridge" && (
@@ -287,6 +294,10 @@ export default function App() {
   const [topPanelColor, setTopPanelColor] = useState(null);
   const [louverColor, setLouverColor] = useState(null);
   const [colorShading, setColorShading] = useState({ canopy: 0, bottom: 0, door: 0, toppanel: 0, louver: 0 });
+  const [canopyTextureUrl, setCanopyTextureUrl] = useState(null);
+  const [sidePanel1TextureUrl, setSidePanel1TextureUrl] = useState(null);
+  const [sidePanel2TextureUrl, setSidePanel2TextureUrl] = useState(null);
+  const [louverTextureUrl, setLouverTextureUrl] = useState(null);
   const [open, setOpen] = useState(true);
 
   // Hook to get the loading progress
@@ -297,8 +308,8 @@ export default function App() {
       modelType === "undercounter"
         ? underCounterRef.current
         : modelType === "visicooler"
-          ? visiCoolerRef.current
-          : deepFridgeRef.current;
+        ? visiCoolerRef.current
+        : deepFridgeRef.current;
     if (ref?.setDoorSelection) ref.setDoorSelection(count, position);
   };
 
@@ -309,6 +320,39 @@ export default function App() {
     visiCoolerRef.current?.toggleLEDLight1001?.(visible);
   };
 
+  const handleCanopyTextureUpload = (url) => {
+    setCanopyTextureUrl(url);
+    visiCoolerRef.current?.applyCanopyTexture(url);
+  };
+  const handleCanopyTextureReset = () => {
+    setCanopyTextureUrl(null);
+    visiCoolerRef.current?.resetCanopyTexture();
+  };
+  const handleSidePanel1TextureUpload = (url) => {
+    setSidePanel1TextureUrl(url);
+    visiCoolerRef.current?.applySidePanel1Texture(url);
+  };
+  const handleSidePanel1TextureReset = () => {
+    setSidePanel1TextureUrl(null);
+    visiCoolerRef.current?.resetSidePanel1Texture();
+  };
+  const handleSidePanel2TextureUpload = (url) => {
+    setSidePanel2TextureUrl(url);
+    visiCoolerRef.current?.applySidePanel2Texture(url);
+  };
+  const handleSidePanel2TextureReset = () => {
+    setSidePanel2TextureUrl(null);
+    visiCoolerRef.current?.resetSidePanel2Texture();
+  };
+  const handleLouverTextureUpload = (url) => {
+    setLouverTextureUrl(url);
+    visiCoolerRef.current?.applyLouverTexture(url);
+  };
+  const handleLouverTextureReset = () => {
+    setLouverTextureUrl(null);
+    visiCoolerRef.current?.resetLouverTexture();
+  };
+
   const handleFrontTextureUpload = (url) => deepFridgeRef.current?.applyFrontTexture(url);
   const handleFrontTextureReset = () => deepFridgeRef.current?.resetFront();
   const handleLeftTextureUpload = (url) => deepFridgeRef.current?.applyLeftTexture(url);
@@ -317,6 +361,52 @@ export default function App() {
   const handleRightTextureReset = () => deepFridgeRef.current?.resetRight();
 
   const panelWidth = open ? 500 : 0;
+
+  // --- New Preset Logic ---
+  const pepsiPreset = {
+    canopyColor: "#02235e",
+    bottomBorderColor: "#02235e",
+    doorColor: "#02235e",
+    topPanelColor: "#02235e",
+    louverColor: "#02235e",
+    canopyTexture: "/texture/pepsicanopy.jpg",
+    sidePanelTexture: "/texture/pepsisidepannel.jpg",
+    louverTexture: "/images/pepsi-louver.png",
+  };
+
+  const cokePreset = {
+    canopyColor: "#da291c",
+    bottomBorderColor: "#da291c",
+    doorColor: "#da291c",
+    topPanelColor: "#da291c",
+    louverColor: "#da291c",
+    canopyTexture: "/texture/cococolacanopy.jpg",
+    sidePanelTexture: "/texture/cocacolaside.jpg",
+    louverTexture: "/images/coke-louver.png",
+  };
+
+  const applyPreset = (preset) => {
+    setCanopyColor(preset.canopyColor);
+    setBottomBorderColor(preset.bottomBorderColor);
+    setDoorColor(preset.doorColor);
+    setTopPanelColor(preset.topPanelColor);
+    setLouverColor(preset.louverColor);
+
+    // Apply textures to the model directly via its ref
+    if (visiCoolerRef.current) {
+      visiCoolerRef.current.applyCanopyTexture(preset.canopyTexture);
+      visiCoolerRef.current.applySidePanel1Texture(preset.sidePanelTexture);
+      visiCoolerRef.current.applySidePanel2Texture(preset.sidePanelTexture);
+      visiCoolerRef.current.applyLouverTexture(preset.louverTexture);
+    }
+
+    // Update the local state for the Interface component to reflect the changes
+    setCanopyTextureUrl(preset.canopyTexture);
+    setSidePanel1TextureUrl(preset.sidePanelTexture);
+    setSidePanel2TextureUrl(preset.sidePanelTexture);
+    setLouverTextureUrl(preset.louverTexture);
+  };
+  // --- End New Preset Logic ---
 
   return (
     <Box sx={{ display: "flex", flexDirection: "row-reverse", height: "100vh", width: "100vw" }}>
@@ -381,28 +471,64 @@ export default function App() {
                 />
               )}
               {modelType === "visicooler" && (
-                <VisicoolerInterface
-                  onLEDToggle={handleLEDToggle}
-                  onCanopyColorChange={setCanopyColor}
-                  canopyColor={canopyColor}
-                  onBottomBorderColorChange={setBottomBorderColor}
-                  bottomBorderColor={bottomBorderColor}
-                  onDoorColorChange={setDoorColor}
-                  doorColor={doorColor}
-                  onTopPanelColorChange={setTopPanelColor}
-                  topPanelColor={topPanelColor}
-                  onLouverColorChange={setLouverColor}
-                  louverColor={louverColor}
-                  onColorShadingChange={setColorShading}
-                  onCanopyTextureUpload={(url) => visiCoolerRef.current?.applyCanopyTexture(url)}
-                  onCanopyTextureReset={() => visiCoolerRef.current?.resetCanopyTexture()}
-                  onSidePanel1TextureUpload={(url) => visiCoolerRef.current?.applySidePanel1Texture(url)}
-                  onSidePanel1TextureReset={() => visiCoolerRef.current?.resetSidePanel1Texture()}
-                  onSidePanel2TextureUpload={(url) => visiCoolerRef.current?.applySidePanel2Texture(url)}
-                  onSidePanel2TextureReset={() => visiCoolerRef.current?.resetSidePanel2Texture()}
-                  onLouverTextureUpload={(url) => visiCoolerRef.current?.applyLouverTexture(url)}
-                  onLouverTextureReset={() => visiCoolerRef.current?.resetLouverTexture()}
-                />
+                <>
+                  {/* --- New Preset Buttons Section --- */}
+                  <Paper variant="outlined" sx={{ p: 2, mb: 2, background: '#f7f9fc' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, color: '#333' }}>
+                      Apply Preset Look
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button
+                        variant="contained"
+                        sx={{
+                          backgroundColor: '#02235e',
+                          '&:hover': { backgroundColor: '#011a43' },
+                          flex: 1,
+                          fontSize: '0.75rem'
+                        }}
+                        onClick={() => applyPreset(pepsiPreset)}
+                      >
+                        Pepsi Look
+                      </Button>
+                      <Button
+                        variant="contained"
+                        sx={{
+                          backgroundColor: '#da291c',
+                          '&:hover': { backgroundColor: '#b72216' },
+                          flex: 1,
+                          fontSize: '0.75rem'
+                        }}
+                        onClick={() => applyPreset(cokePreset)}
+                      >
+                        Coca-Cola Look
+                      </Button>
+                    </Box>
+                  </Paper>
+                  {/* --- End New Preset Buttons Section --- */}
+
+                  <VisicoolerInterface
+                    onLEDToggle={handleLEDToggle}
+                    onCanopyColorChange={setCanopyColor}
+                    canopyColor={canopyColor}
+                    onBottomBorderColorChange={setBottomBorderColor}
+                    bottomBorderColor={bottomBorderColor}
+                    onDoorColorChange={setDoorColor}
+                    doorColor={doorColor}
+                    onTopPanelColorChange={setTopPanelColor}
+                    topPanelColor={topPanelColor}
+                    onLouverColorChange={setLouverColor}
+                    louverColor={louverColor}
+                    onColorShadingChange={setColorShading}
+                    onCanopyTextureUpload={handleCanopyTextureUpload}
+                    onCanopyTextureReset={handleCanopyTextureReset}
+                    onSidePanel1TextureUpload={handleSidePanel1TextureUpload}
+                    onSidePanel1TextureReset={handleSidePanel1TextureReset}
+                    onSidePanel2TextureUpload={handleSidePanel2TextureUpload}
+                    onSidePanel2TextureReset={handleSidePanel2TextureReset}
+                    onLouverTextureUpload={handleLouverTextureUpload}
+                    onLouverTextureReset={handleLouverTextureReset}
+                  />
+                </>
               )}
               {modelType === "deepfridge" && (
                 <DeepFridgeInterface
@@ -449,6 +575,10 @@ export default function App() {
             topPanelColor={topPanelColor}
             louverColor={louverColor}
             colorShading={colorShading}
+            canopyTextureUrl={canopyTextureUrl}
+            sidePanel1TextureUrl={sidePanel1TextureUrl}
+            sidePanel2TextureUrl={sidePanel2TextureUrl}
+            louverTextureUrl={louverTextureUrl}
           />
         </Canvas>
         <DownloadButton gl={gl} />
