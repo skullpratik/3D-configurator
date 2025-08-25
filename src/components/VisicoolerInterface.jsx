@@ -308,7 +308,7 @@ export const Interface = ({
     </StyledCard>
   );
 
-  const renderUploadSection = (title, image, setImage, inputRef, uploading, setUploading, onUpload, onReset, accept = "image/*") => (
+  const renderUploadSection = (title, image, setImage, inputRef, uploading, setUploading, onUpload, onReset, accept = "image/*", helpText) => (
     <StyledCard variant="outlined">
       <CardContent sx={{ p: 1, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, display: 'flex', alignItems: 'center', fontSize: '0.75rem' }}>
@@ -387,17 +387,17 @@ export const Interface = ({
           hidden
         />
         <Typography variant="caption" sx={{ mt: 0.5, display: "block", color: "text.secondary", fontSize: '0.6rem' }}>
-          JPG, PNG. Max 5MB.
+          {helpText}
         </Typography>
       </CardContent>
     </StyledCard>
   );
 
   return (
-    <Box sx={{ 
-      p: 1.5, 
-      height: '100vh', 
-      display: 'flex', 
+    <Box sx={{
+      p: 1.5,
+      height: '100vh',
+      display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden'
     }}>
@@ -430,8 +430,8 @@ export const Interface = ({
       </Box>
 
       {/* Scrollable content area */}
-      <Box sx={{ 
-        flex: 1, 
+      <Box sx={{
+        flex: 1,
         overflowY: 'auto',
         WebkitOverflowScrolling: 'touch', // Enable momentum scrolling on iOS
         '&::-webkit-scrollbar': {
@@ -465,7 +465,9 @@ export const Interface = ({
                 uploadingCanopy,
                 setUploadingCanopy,
                 onCanopyTextureUpload,
-                onCanopyTextureReset
+                onCanopyTextureReset,
+                "image/*",
+                "JPG, PNG. Max-5MB. Dimensions--1000x500"
               )}
             </Box>
             
@@ -478,7 +480,9 @@ export const Interface = ({
                 uploadingSP1,
                 setUploadingSP1,
                 onSidePanel1TextureUpload,
-                onSidePanel1TextureReset
+                onSidePanel1TextureReset,
+                "image/*",
+                "JPG, PNG. Max-5MB. Dimensions--340x1144"
               )}
             </Box>
             
@@ -491,7 +495,9 @@ export const Interface = ({
                 uploadingSP2,
                 setUploadingSP2,
                 onSidePanel2TextureUpload,
-                onSidePanel2TextureReset
+                onSidePanel2TextureReset,
+                "image/*",
+                "JPG, PNG. Max-5MB. Dimensions--340x1144"
               )}
             </Box>
           </Box>
@@ -657,7 +663,7 @@ export const Interface = ({
                       }}
                     />
                     <Typography variant="caption" sx={{ display: "block", color: "text.secondary", fontSize: '0.6rem' }}>
-                      JPG, PNG, or GIF. Max 5MB.
+                      JPG, PNG. Max 5MB.
                     </Typography>
                   </>
                 )}
