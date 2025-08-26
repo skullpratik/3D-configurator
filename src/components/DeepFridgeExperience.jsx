@@ -4,14 +4,14 @@ import { Environment, ContactShadows, OrbitControls, useGLTF } from "@react-thre
 import * as THREE from "three";
 import gsap from "gsap";
 
-useGLTF.preload("/models/DeepFreezer2.glb");
+useGLTF.preload("/models/deepfreezer.glb");
 
 export const Experience = forwardRef(function DeepFridgeExperience(
   { ledEnabled = true, onAssetLoaded },
   ref
 ) {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/DeepFreezer2.glb");
+  const { scene } = useGLTF("/models/deepfreezer.glb");
 
   const door1Ref = useRef(null);
   const door2Ref = useRef(null);
