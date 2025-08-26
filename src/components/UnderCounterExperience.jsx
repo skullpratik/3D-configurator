@@ -26,7 +26,7 @@ const SOLID_DOOR_MESH_PREFIXES = ["Door_01_", "Door_02_", "Door_03_"]; // matche
 
 // Door rotation configuration
 const doorConfig = {
-  Door_01: { axis: "z", angle: 90 },
+  Door_01: { axis: "y", angle: 90 },
   Door_02: { axis: "z", angle: -90 },
   Door_03: { axis: "z", angle: -90 },
   "GlassDoor-01": { axis: "x", angle: 90 },
@@ -43,7 +43,7 @@ const positionConfigs = {
   1: {
     1: { doors: ["Door_01"], panels: [PANELS[0]], hiddenDrawers: ["Drawer-01001", "Drawer-04", "Drawer-07", "Door_02", "Door_03", "Drawer-01_Inside_Panal"] },
     2: { doors: ["Door_02"], panels: [PANELS[1]], hiddenDrawers: ["Drawer-05", "Drawer-08", "Drawer-02", "Door_03", "Door_01", "Drawer-02_Inside_Panal"] },
-    3: { doors: ["Door_03"], panels: [PANELS[2]], hiddenDrawers: ["Drawer-03", "Drawer-09001", "Drawer-03001", "Door_01", "Door_02", "Drawer-03_Inside_Panal"] }
+    3: { doors: ["Door_03"], panels: [PANELS[2]], hiddenDrawers: ["Drawer-03", "Drawer-09001", "Drawer-03001", "Door_01", "Door_02", "Drawer-03_Inside_Panal","Logo"] }
   },
   2: {
     1: { doors: ["Door_01", "Door_02"], panels: [PANELS[0], PANELS[1]], hiddenDrawers: ["Drawer-01001", "Drawer-05", "Drawer-02", "Drawer-08", "Drawer-07", "Drawer-04", "Door_03", "Drawer-01_Inside_Panal", "Drawer-02_Inside_Panal"] },
@@ -57,18 +57,18 @@ const positionConfigs = {
       hiddenDrawers: [
         "Drawer-01001", "Drawer-04", "Drawer-07", "Drawer-01_Inside_Panal",
         "Drawer-05", "Drawer-08", "Drawer-02", "Drawer-02_Inside_Panal",
-        "Drawer-03", "Drawer-09001", "Drawer-03001", "Drawer-03_Inside_Panal"
+        "Drawer-03", "Drawer-09001", "Drawer-03001", "Drawer-03_Inside_Panal","Logo"
       ]
     }
   }
 };
 
 // Preload GLTF
-useGLTF.preload("/models/undercounter.glb");
+useGLTF.preload("/models/UnderCounterAll3Models.glb");
 
 export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr", doorType = "solid" }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/undercounter.glb");
+  const { scene } = useGLTF("/models/UnderCounterAll3Models.glb");
   
   const [position, setPosition] = useState(new THREE.Vector3(0.4, -0.836, 0));
   const moveSpeed = 0.05;

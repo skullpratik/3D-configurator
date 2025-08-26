@@ -1,10 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   Typography,
-  FormControl,
-  Select,
-  MenuItem,
   Switch,
   FormControlLabel,
   Button,
@@ -15,10 +12,8 @@ import {
   Slider,
   Card,
   CardContent,
-  Divider,
   Grid,
-  Paper,
-  Popover
+  Popover,
 } from "@mui/material";
 import { styled } from '@mui/material/styles';
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -26,7 +21,6 @@ import CloseIcon from "@mui/icons-material/Close";
 import PaletteIcon from "@mui/icons-material/Palette";
 import ImageIcon from "@mui/icons-material/Image";
 import ViewInArIcon from "@mui/icons-material/ViewInAr";
-import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
 import { SketchPicker } from 'react-color';
 
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -36,14 +30,6 @@ const StyledCard = styled(Card)(({ theme }) => ({
   transition: 'all 0.2s ease-in-out',
   '&:hover': {
     boxShadow: theme.shadows[4],
-  }
-}));
-
-const SmallSelect = styled(Select)(({ theme }) => ({
-  fontSize: '0.75rem',
-  '& .MuiSelect-select': {
-    paddingTop: '6px',
-    paddingBottom: '6px',
   }
 }));
 
@@ -103,7 +89,11 @@ export const Interface = ({
   onSidePanel2TextureReset,
   onLouverTextureUpload,
   onLouverTextureReset,
-  onColorShadingChange
+  onColorShadingChange,
+  canopyTextureUrl,
+  sidePanel1TextureUrl,
+  sidePanel2TextureUrl,
+  louverTextureUrl,
 }) => {
   const [ledVisible, setLedVisible] = useState(false);
   const [louverMode, setLouverMode] = useState("color");
@@ -117,16 +107,16 @@ export const Interface = ({
   });
 
   const [uploadingCanopy, setUploadingCanopy] = useState(false);
-  const [canopyImage, setCanopyImage] = useState(null);
+  const [canopyImage, setCanopyImage] = useState(canopyTextureUrl);
 
   const [uploadingSP1, setUploadingSP1] = useState(false);
-  const [sidePanel1Image, setSidePanel1Image] = useState(null);
+  const [sidePanel1Image, setSidePanel1Image] = useState(sidePanel1TextureUrl);
 
   const [uploadingSP2, setUploadingSP2] = useState(false);
-  const [sidePanel2Image, setSidePanel2Image] = useState(null);
+  const [sidePanel2Image, setSidePanel2Image] = useState(sidePanel2TextureUrl);
 
   const [uploadingLouver, setUploadingLouver] = useState(false);
-  const [louverImage, setLouverImage] = useState(null);
+  const [louverImage, setLouverImage] = useState(louverTextureUrl);
 
   const [colorPickerOpen, setColorPickerOpen] = useState({
     canopy: false,
@@ -147,6 +137,26 @@ export const Interface = ({
   const sp1InputRef = useRef(null);
   const sp2InputRef = useRef(null);
   const louverInputRef = useRef(null);
+
+  // Sync internal state with props from the parent component
+  useEffect(() => {
+    setCanopyImage(canopyTextureUrl);
+  }, [canopyTextureUrl]);
+
+  useEffect(() => {
+    setSidePanel1Image(sidePanel1TextureUrl);
+  }, [sidePanel1TextureUrl]);
+
+  useEffect(() => {
+    setSidePanel2Image(sidePanel2TextureUrl);
+  }, [sidePanel2TextureUrl]);
+  
+  useEffect(() => {
+    setLouverImage(louverTextureUrl);
+    if (louverTextureUrl) {
+      setLouverMode("image");
+    }
+  }, [louverTextureUrl]);
 
   const handleARRedirect = () => {
     window.location.href = "AR.html";
@@ -241,7 +251,7 @@ export const Interface = ({
         <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, display: 'flex', alignItems: 'center', fontSize: '0.75rem' }}>
           <PaletteIcon sx={{ mr: 0.5, fontSize: '0.9rem' }} /> {title}
         </Typography>
-        
+
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           <ColorButton
             backgroundcolor={selectedColor || undefined}
@@ -249,7 +259,7 @@ export const Interface = ({
           >
             {selectedColor ? 'Change Color' : 'Select Color'}
           </ColorButton>
-          
+
           <Popover
             open={colorPickerOpen[type]}
             anchorEl={colorPickerAnchor[type]}
@@ -279,7 +289,7 @@ export const Interface = ({
             </Box>
           </Popover>
         </Box>
-        
+
         {selectedColor && (
           <>
             <Typography variant="caption" sx={{ display: 'block', mt: 1, mb: 0.5, color: 'text.secondary', fontSize: '0.65rem' }}>
@@ -433,7 +443,7 @@ export const Interface = ({
       <Box sx={{
         flex: 1,
         overflowY: 'auto',
-        WebkitOverflowScrolling: 'touch', // Enable momentum scrolling on iOS
+        WebkitOverflowScrolling: 'touch',
         '&::-webkit-scrollbar': {
           width: '6px',
         },
@@ -453,7 +463,7 @@ export const Interface = ({
           <SectionHeader>
             <ImageIcon sx={{ mr: 1, fontSize: '1rem' }} /> Image Customization
           </SectionHeader>
-          
+
           {/* Three image boxes in a single row */}
           <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
             <Box sx={{ flex: 1 }}>
@@ -470,7 +480,7 @@ export const Interface = ({
                 "JPG, PNG. Max-5MB. Dimensions--1000x500"
               )}
             </Box>
-            
+
             <Box sx={{ flex: 1 }}>
               {renderUploadSection(
                 "Side Panel 1",
@@ -485,7 +495,7 @@ export const Interface = ({
                 "JPG, PNG. Max-5MB. Dimensions--340x1144"
               )}
             </Box>
-            
+
             <Box sx={{ flex: 1 }}>
               {renderUploadSection(
                 "Side Panel 2",
@@ -501,7 +511,7 @@ export const Interface = ({
               )}
             </Box>
           </Box>
-          
+
           {/* Full-width Louver section */}
           <Box sx={{ mt: 1 }}>
             <StyledCard variant="outlined">
@@ -509,7 +519,7 @@ export const Interface = ({
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center', fontSize: '0.75rem' }}>
                   <ImageIcon sx={{ mr: 0.5, fontSize: '0.9rem' }} /> Louver Customization
                 </Typography>
-                
+
                 <ToggleButtonGroup
                   value={louverMode}
                   exclusive
@@ -526,7 +536,7 @@ export const Interface = ({
                     Image
                   </ToggleButton>
                 </ToggleButtonGroup>
-                
+
                 {louverMode === "color" ? (
                   <>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: louverColor ? 1 : 0 }}>

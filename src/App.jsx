@@ -364,11 +364,11 @@ export default function App() {
 
   // --- New Preset Logic ---
   const pepsiPreset = {
-    canopyColor: "#02235e",
-    bottomBorderColor: "#02235e",
-    doorColor: "#02235e",
-    topPanelColor: "#02235e",
-    louverColor: "#02235e",
+    canopyColor: "#000000",
+    bottomBorderColor: "#000000",
+    doorColor: "#000000",
+    topPanelColor: "#000000",
+    louverColor: "#000000",
     canopyTexture: "/texture/pepsicanopy.jpg",
     sidePanelTexture: "/texture/pepsisidepannel.jpg",
     louverTexture: "/images/pepsi-louver.png",
@@ -519,6 +519,12 @@ export default function App() {
                     onLouverColorChange={setLouverColor}
                     louverColor={louverColor}
                     onColorShadingChange={setColorShading}
+                    
+                     canopyTextureUrl={canopyTextureUrl}
+        sidePanel1TextureUrl={sidePanel1TextureUrl}
+        sidePanel2TextureUrl={sidePanel2TextureUrl}
+        louverTextureUrl={louverTextureUrl}
+
                     onCanopyTextureUpload={handleCanopyTextureUpload}
                     onCanopyTextureReset={handleCanopyTextureReset}
                     onSidePanel1TextureUpload={handleSidePanel1TextureUpload}
