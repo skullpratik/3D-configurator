@@ -95,6 +95,7 @@ function CanvasContent({
   sidePanel1TextureUrl,
   sidePanel2TextureUrl,
   louverTextureUrl,
+  isReflective,
 }) {
   return (
     <>
@@ -105,6 +106,7 @@ function CanvasContent({
           roughness={materialProps.roughness}
           lightSettings={lightSettings}
           doorType={doorType}
+          isReflective={isReflective} // New prop
         />
       )}
       {modelType === "visicooler" && (
@@ -171,6 +173,11 @@ function HeaderDropdown({ modelType, setModelType, panelWidth }) {
           boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
           transition: "all 0.25s ease",
           "&:hover": { transform: "scale(1.02)", background: "#fafafa" },
+          // Added background image properties
+          backgroundImage: 'url("/texture/Western-Refrigeration-Logo.jpg")', // Replace with your image URL
+          backgroundSize: '150px',
+         backgroundPosition: '99% 52%',
+         backgroundRepeat: 'no-repeat'
         }}
       >
         <Box
@@ -300,7 +307,15 @@ export default function App() {
   const [louverTextureUrl, setLouverTextureUrl] = useState(null);
   const [open, setOpen] = useState(true);
 
-  // Hook to get the loading progress
+  // --- New State for Reflection ---
+  const [isReflective, setIsReflective] = useState(false);
+  const handleToggleReflection = () => {
+    if (underCounterRef.current && underCounterRef.current.toggleReflection) {
+      underCounterRef.current.toggleReflection();
+      setIsReflective(prev => !prev);
+    }
+  };
+
   const { progress } = useProgress();
 
   const handleDoorChange = (count, position) => {
@@ -308,8 +323,8 @@ export default function App() {
       modelType === "undercounter"
         ? underCounterRef.current
         : modelType === "visicooler"
-        ? visiCoolerRef.current
-        : deepFridgeRef.current;
+          ? visiCoolerRef.current
+          : deepFridgeRef.current;
     if (ref?.setDoorSelection) ref.setDoorSelection(count, position);
   };
 
@@ -362,7 +377,6 @@ export default function App() {
 
   const panelWidth = open ? 500 : 0;
 
-  // --- New Preset Logic ---
   const pepsiPreset = {
     canopyColor: "#000000",
     bottomBorderColor: "#000000",
@@ -392,7 +406,6 @@ export default function App() {
     setTopPanelColor(preset.topPanelColor);
     setLouverColor(preset.louverColor);
 
-    // Apply textures to the model directly via its ref
     if (visiCoolerRef.current) {
       visiCoolerRef.current.applyCanopyTexture(preset.canopyTexture);
       visiCoolerRef.current.applySidePanel1Texture(preset.sidePanelTexture);
@@ -400,13 +413,11 @@ export default function App() {
       visiCoolerRef.current.applyLouverTexture(preset.louverTexture);
     }
 
-    // Update the local state for the Interface component to reflect the changes
     setCanopyTextureUrl(preset.canopyTexture);
     setSidePanel1TextureUrl(preset.sidePanelTexture);
     setSidePanel2TextureUrl(preset.sidePanelTexture);
     setLouverTextureUrl(preset.louverTexture);
   };
-  // --- End New Preset Logic ---
 
   return (
     <Box sx={{ display: "flex", flexDirection: "row-reverse", height: "100vh", width: "100vw" }}>
@@ -463,16 +474,24 @@ export default function App() {
             {/* Interface Body */}
             <Box sx={{ p: 3, height: "100%", overflowY: "auto" }}>
               {modelType === "undercounter" && (
-                <UnderCounterInterface
-                  onDoorChange={handleDoorChange}
-                  onMaterialChange={handleMaterialChange}
-                  onDoorTypeChange={setDoorType}
-                  doorType={doorType}
-                />
+                <>
+                  <Button
+                    variant="contained"
+                    onClick={handleToggleReflection}
+                    sx={{ my: 2 }}
+                  >
+                    {isReflective ? "Remove Reflection" : "Add Reflection"}
+                  </Button>
+                  <UnderCounterInterface
+                    onDoorChange={handleDoorChange}
+                    onMaterialChange={handleMaterialChange}
+                    onDoorTypeChange={setDoorType}
+                    doorType={doorType}
+                  />
+                </>
               )}
               {modelType === "visicooler" && (
                 <>
-                  {/* --- New Preset Buttons Section --- */}
                   <Paper variant="outlined" sx={{ p: 2, mb: 2, background: '#f7f9fc' }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, color: '#333' }}>
                       Apply Preset Look
@@ -504,8 +523,6 @@ export default function App() {
                       </Button>
                     </Box>
                   </Paper>
-                  {/* --- End New Preset Buttons Section --- */}
-
                   <VisicoolerInterface
                     onLEDToggle={handleLEDToggle}
                     onCanopyColorChange={setCanopyColor}
@@ -519,12 +536,10 @@ export default function App() {
                     onLouverColorChange={setLouverColor}
                     louverColor={louverColor}
                     onColorShadingChange={setColorShading}
-                    
-                     canopyTextureUrl={canopyTextureUrl}
-        sidePanel1TextureUrl={sidePanel1TextureUrl}
-        sidePanel2TextureUrl={sidePanel2TextureUrl}
-        louverTextureUrl={louverTextureUrl}
-
+                    canopyTextureUrl={canopyTextureUrl}
+                    sidePanel1TextureUrl={sidePanel1TextureUrl}
+                    sidePanel2TextureUrl={sidePanel2TextureUrl}
+                    louverTextureUrl={louverTextureUrl}
                     onCanopyTextureUpload={handleCanopyTextureUpload}
                     onCanopyTextureReset={handleCanopyTextureReset}
                     onSidePanel1TextureUpload={handleSidePanel1TextureUpload}
@@ -554,14 +569,12 @@ export default function App() {
 
       {/* Scene Panel */}
       <Box sx={{ flex: 1, position: "relative" }}>
-        {/* Render the loader outside the Canvas but in the same parent Box */}
         {progress < 100 && <Loader progress={progress} />}
 
         <Canvas
           shadows
           camera={{ position: [4, 4, 8], fov: 35 }}
           gl={{ preserveDrawingBuffer: true }}
-          // Hide the canvas when loading to prevent the empty screen flash
           style={{ visibility: progress === 100 ? "visible" : "hidden" }}
         >
           <GLProvider setGL={setGL} />
@@ -585,6 +598,7 @@ export default function App() {
             sidePanel1TextureUrl={sidePanel1TextureUrl}
             sidePanel2TextureUrl={sidePanel2TextureUrl}
             louverTextureUrl={louverTextureUrl}
+            isReflective={isReflective}
           />
         </Canvas>
         <DownloadButton gl={gl} />
