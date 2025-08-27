@@ -173,11 +173,7 @@ function HeaderDropdown({ modelType, setModelType, panelWidth }) {
           boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
           transition: "all 0.25s ease",
           "&:hover": { transform: "scale(1.02)", background: "#fafafa" },
-          // Added background image properties
-          backgroundImage: 'url("/texture/Western-Refrigeration-Logo.jpg")', // Replace with your image URL
-          backgroundSize: '150px',
-         backgroundPosition: '99% 52%',
-         backgroundRepeat: 'no-repeat'
+          position: "relative", // Ensure relative positioning for absolute child
         }}
       >
         <Box
@@ -202,6 +198,22 @@ function HeaderDropdown({ modelType, setModelType, panelWidth }) {
         >
           {selectedModel.name}
         </Typography>
+        {/* Static Logo Image */}
+        <Box
+          component="img"
+          src="/texture/Western-Refrigeration-Logo.jpg"
+          alt="Western Refrigeration Logo"
+          sx={{
+            position: "absolute",
+            right: "1%",
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: "150px",
+            height: "84px",
+            objectFit: "contain",
+            overflowY: "hidden",
+          }}
+        />
       </Box>
 
       {open && (
