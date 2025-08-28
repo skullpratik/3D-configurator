@@ -169,20 +169,7 @@ export const Experience = forwardRef(function DeepFridgeExperience(
     <Suspense fallback={null}>
       <Environment files="photo_studio_01_1k.hdr" background={false} intensity={1.2} />
       <ContactShadows position={[0, -1.1, 0]} opacity={0.8} scale={15} blur={2.5} far={10} />
-      <OrbitControls
-        enableDamping
-        dampingFactor={0.07}
-        rotateSpeed={0.8}
-        zoomSpeed={0.8}
-        panSpeed={0.6}
-        enablePan
-        minDistance={2.5}
-        maxDistance={20}
-        minPolarAngle={Math.PI / 6}
-        maxPolarAngle={Math.PI / 2.05}
-        target={[0, 0.5, 0]}
-        makeDefault
-      />
+      <OrbitControls enableDamping dampingFactor={0.12} rotateSpeed={1.1} zoomSpeed={1} panSpeed={0.8} enablePan minDistance={2.5} maxDistance={20} minPolarAngle={Math.PI / 6} maxPolarAngle={Math.PI / 2.05} target={[0, 0.5, 0]} makeDefault />
       {scene && <primitive object={scene} />}
     </Suspense>
   );
