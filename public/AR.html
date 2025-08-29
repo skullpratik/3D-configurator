@@ -286,94 +286,82 @@
     </footer>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const qrcodeElement = document.getElementById('qrcode');
-            const directLinkElement = document.getElementById('directLink');
-            const modelNameElement = document.getElementById('modelName');
-            const modelDescriptionElement = document.getElementById('modelDescription');
-            const modelIconElement = document.getElementById('modelIcon');
-            
-            // Get model from URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const model = urlParams.get('model') || 'deepfreezer';
-            
-            // Define models with your paths
-            const models = {
-                visicooler: {
-                    glb: "/assets/visicooler.glb",
-                    title: "Visicooler",
-                    description: "Advanced cooling solution with transparent doors",
-                    icon: "❄️"
-                },
-                deepfreezer: {
-                    glb: "/assets/deepfreezer.glb",
-                    title: "Deep Freezer",
-                    description: "Professional-grade freezing equipment",
-                    icon: "🧊"
-                }
-            };
-            
-            // Set model info based on URL parameter
-            const selectedModel = models[model] || models.deepfreezer;
-            modelNameElement.textContent = selectedModel.title;
-            modelDescriptionElement.textContent = selectedModel.description;
-            modelIconElement.textContent = selectedModel.icon;
-            
-            // Generate QR code function
-           function generateQRCode() {
-    // Clear previous QR code
-    qrcodeElement.innerHTML = '';
-    
-    // Create the full, absolute URL for the GLB file
-    const absoluteGlbUrl = `${window.location.origin}${selectedModel.glb}`;
-
-    // Create the Scene Viewer URL for Android using the absolute path
-    const sceneViewerUrl = `https://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(absoluteGlbUrl)}&mode=ar_only&title=${encodeURIComponent(selectedModel.title)}`;
-    
-    // Generate QR code using the correct method
-    try {
-        const canvas = document.createElement('canvas');
-        QRCode.toCanvas(canvas, sceneViewerUrl, {
-            width: 280,
-            margin: 1,
-            color: {
-                dark: '#4a6cf7',
-                light: '#ffffff'
+    document.addEventListener('DOMContentLoaded', function() {
+        const qrcodeElement = document.getElementById('qrcode');
+        const directLinkElement = document.getElementById('directLink');
+        const modelNameElement = document.getElementById('modelName');
+        const modelDescriptionElement = document.getElementById('modelDescription');
+        const modelIconElement = document.getElementById('modelIcon');
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const model = urlParams.get('model') || 'deepfreezer';
+        
+        const models = {
+            visicooler: {
+                glb: "/assets/visicooler.glb",
+                title: "Visicooler",
+                description: "Advanced cooling solution with transparent doors",
+                icon: "❄️"
+            },
+            deepfreezer: {
+                glb: "/assets/deepfreezer.glb",
+                title: "Deep Freezer",
+                description: "Professional-grade freezing equipment",
+                icon: "🧊"
             }
-        }, function(error) {
-            if (error) {
-                console.error(error);
+        };
+        
+        const selectedModel = models[model] || models.deepfreezer;
+        modelNameElement.textContent = selectedModel.title;
+        modelDescriptionElement.textContent = selectedModel.description;
+        modelIconElement.textContent = selectedModel.icon;
+        
+        function generateQRCode() {
+            qrcodeElement.innerHTML = '';
+            
+            // This is the key change: create an absolute URL
+            const absoluteGlbUrl = `${window.location.origin}${selectedModel.glb}`;
+            
+            const sceneViewerUrl = `https://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(absoluteGlbUrl)}&mode=ar_only&title=${encodeURIComponent(selectedModel.title)}`;
+            
+            try {
+                const canvas = document.createElement('canvas');
+                QRCode.toCanvas(canvas, sceneViewerUrl, {
+                    width: 280,
+                    margin: 1,
+                    color: {
+                        dark: '#4a6cf7',
+                        light: '#ffffff'
+                    }
+                }, function(error) {
+                    if (error) {
+                        console.error(error);
+                        qrcodeElement.innerHTML = '<p class="loading">Failed to generate QR code</p>';
+                        return;
+                    }
+                    qrcodeElement.appendChild(canvas);
+                });
+            } catch (error) {
+                console.error("QR code generation error:", error);
                 qrcodeElement.innerHTML = '<p class="loading">Failed to generate QR code</p>';
-                return;
             }
             
-            qrcodeElement.appendChild(canvas);
-        });
-    } catch (error) {
-        console.error("QR code generation error:", error);
-        qrcodeElement.innerHTML = '<p class="loading">Failed to generate QR code</p>';
-    }
-    
-    // Update direct link
-    directLinkElement.href = sceneViewerUrl;
-}
+            directLinkElement.href = sceneViewerUrl;
+        }
+        
+        generateQRCode();
+        
+        directLinkElement.addEventListener('click', function(e) {
+            e.preventDefault();
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
-            // Initialize with the model from URL parameter
-            generateQRCode();
-            
-            // Direct link event listener
-            directLinkElement.addEventListener('click', function(e) {
-                e.preventDefault();
-                // Check if we're on a mobile device
-                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                
-                if (isMobile) {
-                    window.location.href = this.href;
-                } else {
-                    alert('Please use an Android mobile device to view AR content');
-                }
-            });
+            if (isMobile) {
+                window.location.href = this.href;
+            } else {
+                alert('Please use an Android mobile device to view AR content');
+            }
         });
-    </script>
+    });
+</script>
 </body>
 </html>
