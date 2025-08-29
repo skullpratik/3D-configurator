@@ -159,17 +159,6 @@
             box-shadow: 0 6px 16px rgba(74, 108, 247, 0.3);
         }
         
-        .secondary-button {
-            background: white;
-            color: #4a6cf7;
-            border: 1px solid #e2e8f0;
-        }
-        
-        .secondary-button:hover {
-            background: #f7f9fc;
-            transform: translateY(-2px);
-        }
-        
         .instructions {
             margin-top: 28px;
             padding: 20px;
@@ -279,6 +268,13 @@
             transform: translateY(-2px);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
+        
+        .copied-message {
+            color: #38a169;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -306,7 +302,6 @@
             
             <div class="action-buttons">
                 <a href="#" id="directLink" class="action-button primary-button">View in AR on this device</a>
-                <a href="#" id="shareLink" class="action-button secondary-button">Share AR Link</a>
             </div>
             
             <div class="instructions">
@@ -330,9 +325,10 @@
             <div class="share-section">
                 <p class="share-text">Share this AR experience</p>
                 <div class="share-buttons">
-                    <button class="share-button" id="copyLinkBtn">Copy Link</button>
+                    <button class="share-button" id="copyLinkBtn">Copy AR Link</button>
                     <button class="share-button" id="shareBtn">Share</button>
                 </div>
+                <p id="copiedMessage" class="copied-message">AR link copied to clipboard!</p>
             </div>
         </div>
     </div>
@@ -345,9 +341,9 @@
     document.addEventListener('DOMContentLoaded', function() {
         const qrcodeElement = document.getElementById('qrcode');
         const directLinkElement = document.getElementById('directLink');
-        const shareLinkElement = document.getElementById('shareLink');
         const copyLinkBtn = document.getElementById('copyLinkBtn');
         const shareBtn = document.getElementById('shareBtn');
+        const copiedMessage = document.getElementById('copiedMessage');
         const modelNameElement = document.getElementById('modelName');
         const modelDescriptionElement = document.getElementById('modelDescription');
         const modelIconElement = document.getElementById('modelIcon');
@@ -378,7 +374,6 @@
         // Create the AR URL
         const absoluteGlbUrl = `${window.location.origin}${selectedModel.glb}`;
         const sceneViewerUrl = `https://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(absoluteGlbUrl)}&mode=ar_only&title=${encodeURIComponent(selectedModel.title)}`;
-        const pageUrl = `${window.location.origin}${window.location.pathname}?model=${model}`;
         
         function generateQRCode() {
             qrcodeElement.innerHTML = '';
@@ -406,7 +401,6 @@
             }
             
             directLinkElement.href = sceneViewerUrl;
-            shareLinkElement.href = pageUrl;
         }
         
         generateQRCode();
@@ -423,35 +417,40 @@
             }
         });
         
-        // Copy link functionality
+        // Copy AR link functionality
         copyLinkBtn.addEventListener('click', function() {
-            navigator.clipboard.writeText(pageUrl).then(function() {
-                const originalText = copyLinkBtn.textContent;
-                copyLinkBtn.textContent = 'Copied!';
+            navigator.clipboard.writeText(sceneViewerUrl).then(function() {
+                copiedMessage.style.display = 'block';
                 setTimeout(() => {
-                    copyLinkBtn.textContent = originalText;
+                    copiedMessage.style.display = 'none';
                 }, 2000);
             }).catch(function() {
-                alert('Failed to copy link');
+                alert('Failed to copy AR link');
             });
         });
         
-        // Web Share API
+        // Web Share API for sharing the direct AR link
         shareBtn.addEventListener('click', function() {
             if (navigator.share) {
                 navigator.share({
                     title: `View ${selectedModel.title} in AR`,
                     text: `Check out this ${selectedModel.title} in augmented reality`,
-                    url: pageUrl
+                    url: sceneViewerUrl
                 }).catch(function() {
-                    alert('Sharing failed');
+                    // Fallback to copying the link if sharing fails
+                    navigator.clipboard.writeText(sceneViewerUrl).then(function() {
+                        copiedMessage.style.display = 'block';
+                        setTimeout(() => {
+                            copiedMessage.style.display = 'none';
+                        }, 2000);
+                    });
                 });
             } else {
-                navigator.clipboard.writeText(pageUrl).then(function() {
-                    const originalText = shareBtn.textContent;
-                    shareBtn.textContent = 'Copied!';
+                // Fallback for browsers that don't support the Web Share API
+                navigator.clipboard.writeText(sceneViewerUrl).then(function() {
+                    copiedMessage.style.display = 'block';
                     setTimeout(() => {
-                        shareBtn.textContent = originalText;
+                        copiedMessage.style.display = 'none';
                     }, 2000);
                 }).catch(function() {
                     alert('Sharing not supported on this browser');

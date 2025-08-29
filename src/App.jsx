@@ -181,8 +181,8 @@ function HeaderDropdown({ modelType, setModelType, panelWidth }) {
           src={selectedModel.img}
           alt={selectedModel.name}
           sx={{
-            width: 75,
-            height: 55,
+            width: 55,
+            height: 35,
             objectFit: "contain",
             borderRadius: 2,
             backgroundColor: "#f9f9f936",
@@ -209,7 +209,7 @@ function HeaderDropdown({ modelType, setModelType, panelWidth }) {
             top: "50%",
             transform: "translateY(-50%)",
             width: "150px",
-            height: "84px",
+            height: "50px",
             objectFit: "contain",
             overflowY: "hidden",
           }}
@@ -267,8 +267,8 @@ function HeaderDropdown({ modelType, setModelType, panelWidth }) {
                 src={model.img}
                 alt={model.name}
                 sx={{
-                  width: 65,
-                  height: 65,
+                  width: 35,
+                  height: 35,
                   objectFit: "contain",
                   borderRadius: 2,
                   backgroundColor: "#fafafa",
