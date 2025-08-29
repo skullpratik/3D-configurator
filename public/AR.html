@@ -306,7 +306,7 @@
                     icon: "❄️"
                 },
                 deepfreezer: {
-                    glb: "/assests/deepfreezer.glb",
+                    glb: "/assets/deepfreezer.glb",
                     title: "Deep Freezer",
                     description: "Professional-grade freezing equipment",
                     icon: "🧊"
@@ -320,42 +320,43 @@
             modelIconElement.textContent = selectedModel.icon;
             
             // Generate QR code function
-            function generateQRCode() {
-                // Clear previous QR code
-                qrcodeElement.innerHTML = '';
-                
-                // Create Scene Viewer URL for Android
-                const sceneViewerUrl = `https://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(selectedModel.glb)}&mode=ar_only&title=${encodeURIComponent(selectedModel.title)}`;
-                
-                // Generate QR code using the correct method
-                try {
-                    // Create a canvas element for the QR code
-                    const canvas = document.createElement('canvas');
-                    QRCode.toCanvas(canvas, sceneViewerUrl, {
-                        width: 280,
-                        margin: 1,
-                        color: {
-                            dark: '#4a6cf7',
-                            light: '#ffffff'
-                        }
-                    }, function(error) {
-                        if (error) {
-                            console.error(error);
-                            qrcodeElement.innerHTML = '<p class="loading">Failed to generate QR code</p>';
-                            return;
-                        }
-                        
-                        // Add the canvas to the QR code element
-                        qrcodeElement.appendChild(canvas);
-                    });
-                } catch (error) {
-                    console.error("QR code generation error:", error);
-                    qrcodeElement.innerHTML = '<p class="loading">Failed to generate QR code</p>';
-                }
-                
-                // Update direct link
-                directLinkElement.href = sceneViewerUrl;
+           function generateQRCode() {
+    // Clear previous QR code
+    qrcodeElement.innerHTML = '';
+    
+    // Create the full, absolute URL for the GLB file
+    const absoluteGlbUrl = `${window.location.origin}${selectedModel.glb}`;
+
+    // Create the Scene Viewer URL for Android using the absolute path
+    const sceneViewerUrl = `https://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(absoluteGlbUrl)}&mode=ar_only&title=${encodeURIComponent(selectedModel.title)}`;
+    
+    // Generate QR code using the correct method
+    try {
+        const canvas = document.createElement('canvas');
+        QRCode.toCanvas(canvas, sceneViewerUrl, {
+            width: 280,
+            margin: 1,
+            color: {
+                dark: '#4a6cf7',
+                light: '#ffffff'
             }
+        }, function(error) {
+            if (error) {
+                console.error(error);
+                qrcodeElement.innerHTML = '<p class="loading">Failed to generate QR code</p>';
+                return;
+            }
+            
+            qrcodeElement.appendChild(canvas);
+        });
+    } catch (error) {
+        console.error("QR code generation error:", error);
+        qrcodeElement.innerHTML = '<p class="loading">Failed to generate QR code</p>';
+    }
+    
+    // Update direct link
+    directLinkElement.href = sceneViewerUrl;
+}
             
             // Initialize with the model from URL parameter
             generateQRCode();
