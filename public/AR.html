@@ -188,13 +188,13 @@ a.secondary:hover {
     // Define all models and their file paths
     const models = {
       visicooler: {
-        glb: "https://3d.tikitech.in/visicooler.glb",
-        usdz: "https://3d.tikitech.in/uv.usdz",
+        glb: "/visicooler.glb",
+        //usdz: "https://3d.tikitech.in/uv.usdz",
         title: "Visicooler 3D Model"
       },
       deepfreezer: {
-        glb: "https://3d.tikitech.in/deepfreezer.glb",
-        usdz: "https://3d.tikitech.in/deepfreezer.usdz",
+        glb: "/deepfreezer.glb",
+        //usdz: "https://3d.tikitech.in/deepfreezer.usdz",
         title: "Deep Freezer 3D Model"
       }
     };
@@ -214,7 +214,8 @@ a.secondary:hover {
     // ====== CONFIG (now dynamic) ======
     const glbUrl = selectedModel.glb;
     const usdzUrl = selectedModel.usdz;
-    const launcherUrl = `https://3d.tikitech.in/ar-qr.html?model=${modelType}`;
+    const launcherUrl = `${window.location.origin}/ar-qr.html?model=${modelType}`;
+
     const modelTitle = selectedModel.title;
 
     // ====== UA detection (incl. iPadOS trick) ======
