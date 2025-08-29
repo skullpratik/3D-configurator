@@ -119,6 +119,15 @@
             border-radius: 10px;
             display: inline-block;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            min-height: 280px;
+            min-width: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #qrcode canvas {
+            border-radius: 8px;
         }
         
         .instructions {
@@ -217,6 +226,11 @@
                 padding: 25px;
             }
         }
+        
+        .loading {
+            color: #4a6cf7;
+            font-size: 1.1rem;
+        }
     </style>
 </head>
 <body>
@@ -238,7 +252,9 @@
             <div class="qr-section">
                 <h2 class="qr-title">Scan QR Code for AR</h2>
                 <p>Scan this code with your Android device to view in AR</p>
-                <div id="qrcode"></div>
+                <div id="qrcode">
+                    <p class="loading">Generating QR code...</p>
+                </div>
                 
                 <div class="direct-link">
                     <a href="#" id="directLink">Open AR on this device</a>
@@ -311,17 +327,31 @@
                 // Create Scene Viewer URL for Android
                 const sceneViewerUrl = `https://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(selectedModel.glb)}&mode=ar_only&title=${encodeURIComponent(selectedModel.title)}`;
                 
-                // Generate QR code
-                QRCode.toCanvas(qrcodeElement, sceneViewerUrl, {
-                    width: 280,
-                    margin: 1,
-                    color: {
-                        dark: '#4a6cf7',
-                        light: '#ffffff'
-                    }
-                }, function(error) {
-                    if (error) console.error(error);
-                });
+                // Generate QR code using the correct method
+                try {
+                    // Create a canvas element for the QR code
+                    const canvas = document.createElement('canvas');
+                    QRCode.toCanvas(canvas, sceneViewerUrl, {
+                        width: 280,
+                        margin: 1,
+                        color: {
+                            dark: '#4a6cf7',
+                            light: '#ffffff'
+                        }
+                    }, function(error) {
+                        if (error) {
+                            console.error(error);
+                            qrcodeElement.innerHTML = '<p class="loading">Failed to generate QR code</p>';
+                            return;
+                        }
+                        
+                        // Add the canvas to the QR code element
+                        qrcodeElement.appendChild(canvas);
+                    });
+                } catch (error) {
+                    console.error("QR code generation error:", error);
+                    qrcodeElement.innerHTML = '<p class="loading">Failed to generate QR code</p>';
+                }
                 
                 // Update direct link
                 directLinkElement.href = sceneViewerUrl;
