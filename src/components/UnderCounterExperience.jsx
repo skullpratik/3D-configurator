@@ -64,11 +64,11 @@ const positionConfigs = {
 };
 
 // Preload GLTF
-useGLTF.preload("/models/UnderCounterAll3Models.glb");
+useGLTF.preload("/models/undercounter.glb");
 
 export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr", doorType = "solid", isReflective }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/UnderCounterAll3Models.glb");
+  const { scene } = useGLTF("/models/undercounter.glb");
   
   const [position, setPosition] = useState(new THREE.Vector3(0.4, -0.836, 0));
   const moveSpeed = 0.05;
