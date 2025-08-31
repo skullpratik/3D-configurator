@@ -227,7 +227,7 @@ export function Interface({
         </Grid>
         <Grid item xs={12} sm={6} md={4}>
           {renderUploadSection(
-            "Left Panel",
+            "Right Panel",
             leftImage,
             setLeftImage,
             leftInputRef,
@@ -239,7 +239,7 @@ export function Interface({
         </Grid>
         <Grid item xs={12} sm={6} md={4}>
           {renderUploadSection(
-            "Right Panel",
+            "Left Panel",
             rightImage,
             setRightImage,
             rightInputRef,
