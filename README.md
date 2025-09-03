@@ -1,4 +1,4 @@
-# Table configurator R3F tutorial starter
+# 3D Configurator for Western
 
 This is the starting project to build the Table Configurator using React Three Fiber
 
