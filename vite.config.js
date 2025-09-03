@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   root: '.', // Looks for index.html in root
   publicDir: 'public', // Your other static files
+    base: "/", // ensures correct asset paths on Vercel
   plugins: [react()],
   server: {
     port: 3000
