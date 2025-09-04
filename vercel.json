@@ -22,6 +22,18 @@
       "dest": "/assets/$1"
     },
     {
+      "src": "/textures/(.*)",
+      "dest": "/textures/$1"
+    },
+    {
+      "src": "/images/(.*)",
+      "dest": "/images/$1"
+    },
+    {
+      "src": "/env/(.*)",
+      "dest": "/env/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
