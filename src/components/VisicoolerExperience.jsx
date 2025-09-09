@@ -4,6 +4,10 @@ import { Environment, ContactShadows, OrbitControls, useGLTF } from "@react-thre
 import * as THREE from "three";
 import gsap from "gsap";
 import tinycolor from "tinycolor2";
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
+
 
 useGLTF.preload("/models/Visicooler.glb");
 

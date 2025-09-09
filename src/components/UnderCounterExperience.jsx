@@ -4,6 +4,11 @@ import { Environment, ContactShadows, OrbitControls, useGLTF } from "@react-thre
 import * as THREE from "three";
 import gsap from "gsap";
 
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
+import { EffectComposer, Bloom, SMAA, ToneMapping } from "@react-three/postprocessing";
+import { BlendFunction } from "postprocessing";
+
 // Drawers
 const TARGET_GROUPS = [
   "Drawer-09001", "Drawer-03001", "Drawer-05", "Drawer-08",
@@ -331,36 +336,51 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
     });
   }, [isReflective, scene]);
 
-  return (
-    <Suspense fallback={null}>
-       (
-        <Environment files="photo_studio_01_1k.hdr" background={false} intensity={1} />
-      ) 
-        
-     
-
-      <ambientLight />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]} receiveShadow>
-        <planeGeometry args={[1000, 1000]} />
-        <meshStandardMaterial color="#d8d8d8" visible={false} />
-      </mesh>
-      <ContactShadows position={[-0.01, -0.9, 0]} opacity={0.9} scale={10} blur={2.5} far={45} />
-      
-      <OrbitControls
-        enableDamping
-        dampingFactor={0.12}
-        rotateSpeed={1.1}
-        zoomSpeed={1.0}
-        panSpeed={0.8}
-        enablePan
-        minDistance={0}
-        maxDistance={20}
-        minPolarAngle={Math.PI / 6}
-        maxPolarAngle={Math.PI / 2.05}
-        target={[0, 0.5, 0]}
-        makeDefault
-      />
-      {scene && <primitive object={scene} />}
-    </Suspense>
-  );
+ return (
+    <Suspense fallback={null}>
+      <Environment files="photo_studio_01_1k.hdr" background={false} intensity={1} />
+  
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[5, 5, 5]} intensity={1.2} castShadow />
+  
+     
+  
+      <ContactShadows
+        position={[-0.01, -0.9, 0]}
+        opacity={0.6}
+        scale={6}
+        blur={2.5}
+        far={45}
+      />
+  
+      <OrbitControls
+        enableDamping
+        dampingFactor={0.12}
+        rotateSpeed={1.1}
+        zoomSpeed={1.0}
+        panSpeed={0.8}
+        enablePan
+        minDistance={0}
+        maxDistance={20}
+        minPolarAngle={Math.PI / 6}
+        maxPolarAngle={Math.PI / 2.05}
+        target={[0, 0.5, 0]}
+        makeDefault
+      />
+  
+      {scene && <primitive object={scene} />}
+  
+      {/* 🔥 Postprocessing Effects */}
+      <EffectComposer multisampling={8}>
+        <SMAA /> {/* Anti-aliasing */}
+        <Bloom
+          intensity={0.4}   // glow intensity
+          luminanceThreshold={0.8}
+          luminanceSmoothing={0.2}
+          blendFunction={BlendFunction.SCREEN}
+        />
+        <ToneMapping adaptive={true} />
+      </EffectComposer>
+    </Suspense>
+  );
 });

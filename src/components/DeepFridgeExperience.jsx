@@ -4,6 +4,10 @@ import { Environment, ContactShadows, OrbitControls, useGLTF } from "@react-thre
 import * as THREE from "three";
 import gsap from "gsap";
 
+// Postprocessing
+import { EffectComposer, Bloom, FXAA } from "@react-three/postprocessing";
+import { BlendFunction } from "postprocessing";
+
 useGLTF.preload("/models/deepfreezer.glb");
 
 export const Experience = forwardRef(function DeepFridgeExperience(
@@ -20,20 +24,16 @@ export const Experience = forwardRef(function DeepFridgeExperience(
   const raycaster = useRef(new THREE.Raycaster());
   const mouse = useRef(new THREE.Vector2());
 
-  const light1Ref = useRef();
-  const light2Ref = useRef();
-
   const originalMaterials = useRef({});
   const currentTextures = useRef({});
 
+  // 🔹 Apply texture logic remains the same
   const applyTexture = (mesh, imagePath) => {
     if (!mesh) return;
-
     if (currentTextures.current[mesh.name]) {
       currentTextures.current[mesh.name].dispose();
       currentTextures.current[mesh.name] = null;
     }
-
     if (!imagePath) {
       if (originalMaterials.current[mesh.name]) {
         mesh.material = originalMaterials.current[mesh.name];
@@ -47,21 +47,9 @@ export const Experience = forwardRef(function DeepFridgeExperience(
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.flipY = false;
       tex.anisotropy = gl.capabilities?.getMaxAnisotropy() || 16;
-      tex.minFilter = THREE.LinearFilter;
-      tex.magFilter = THREE.LinearFilter;
-      tex.generateMipmaps = false;
-      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-
-       if (mesh.name === "SidePannelRight") {
-      tex.repeat.set(1, 1);     // scale (increase >1 = zoom in, <1 = tile)
-      tex.offset.set(0.03, -0.04);   // move texture (x, y)
-       // rotate texture (in radians)
-      tex.center.set(0.5, 0.5);  // rotate around center
-    }
 
       const newMaterial = mesh.material.clone();
       newMaterial.map = tex;
-      newMaterial.map.needsUpdate = true;
       newMaterial.needsUpdate = true;
 
       mesh.material = newMaterial;
@@ -71,18 +59,13 @@ export const Experience = forwardRef(function DeepFridgeExperience(
 
   const applyToTarget = (name, imagePath) => {
     const target = scene.getObjectByName(name);
-    if (!target) {
-      console.warn(`Object with name "${name}" not found in the scene.`);
-      return;
-    }
+    if (!target) return;
 
     if (target.isMesh && target.geometry?.attributes?.uv) {
-      console.log(`Applying texture to mesh: ${target.name}`);
       applyTexture(target, imagePath);
     } else if (target.isObject3D) {
       target.traverse((child) => {
         if (child.isMesh && child.geometry?.attributes?.uv) {
-          console.log(`Applying texture to child mesh: ${child.name}`);
           applyTexture(child, imagePath);
         }
       });
@@ -98,10 +81,9 @@ export const Experience = forwardRef(function DeepFridgeExperience(
     resetRight: () => applyToTarget("SidePannelRight", null),
   }));
 
-  // Initial model setup - runs only once
+  // Initial setup
   useEffect(() => {
     if (!scene || !threeScene) return;
-
     threeScene.background = null;
     scene.scale.set(2.5, 2.5, 2.5);
     scene.position.set(0.2, -1.16, 0);
@@ -114,12 +96,10 @@ export const Experience = forwardRef(function DeepFridgeExperience(
       }
     });
 
-    if (onAssetLoaded) {
-      onAssetLoaded();
-    }
+    if (onAssetLoaded) onAssetLoaded();
   }, [scene, threeScene, onAssetLoaded]);
 
-  // Apply default textures after initial setup
+  // Default textures
   useEffect(() => {
     if (!scene) return;
     applyToTarget("FrontPannel", "/texture/Deepfront.jpg");
@@ -127,14 +107,12 @@ export const Experience = forwardRef(function DeepFridgeExperience(
     applyToTarget("SidePannelRight", "/texture/DeepleftRight.jpg");
   }, [scene]);
 
-  // Door interaction setup
+  // Door animation
   useEffect(() => {
     if (!scene || !gl || !camera) return;
 
     door1Ref.current = scene.getObjectByName("Door1");
     door2Ref.current = scene.getObjectByName("Door2");
-    if (door1Ref.current) door1Ref.current.rotation.x = 0;
-    if (door2Ref.current) door2Ref.current.rotation.x = 0;
 
     const handleClick = (event) => {
       const rect = gl.domElement.getBoundingClientRect();
@@ -146,7 +124,7 @@ export const Experience = forwardRef(function DeepFridgeExperience(
         const intersects = raycaster.current.intersectObject(door1Ref.current, true);
         if (intersects.length > 0) {
           const targetRotation = isDoor1Open.current ? 0 : -(Math.PI / 2);
-          gsap.to(door1Ref.current.rotation, { x: targetRotation, duration: 1, ease: "power2.inOut" });
+          gsap.to(door1Ref.current.rotation, { x: targetRotation, duration: 1 });
           isDoor1Open.current = !isDoor1Open.current;
           return;
         }
@@ -155,7 +133,7 @@ export const Experience = forwardRef(function DeepFridgeExperience(
         const intersects = raycaster.current.intersectObject(door2Ref.current, true);
         if (intersects.length > 0) {
           const targetRotation = isDoor2Open.current ? 0 : -Math.PI / 2;
-          gsap.to(door2Ref.current.rotation, { x: targetRotation, duration: 1, ease: "power2.inOut" });
+          gsap.to(door2Ref.current.rotation, { x: targetRotation, duration: 1 });
           isDoor2Open.current = !isDoor2Open.current;
         }
       }
@@ -169,8 +147,34 @@ export const Experience = forwardRef(function DeepFridgeExperience(
     <Suspense fallback={null}>
       <Environment files="photo_studio_01_1k.hdr" background={false} intensity={1.2} />
       <ContactShadows position={[0, -1.1, 0]} opacity={0.8} scale={15} blur={2.5} far={10} />
-      <OrbitControls enableDamping dampingFactor={0.12} rotateSpeed={1.1} zoomSpeed={1} panSpeed={0.8} enablePan minDistance={2.5} maxDistance={20} minPolarAngle={Math.PI / 6} maxPolarAngle={Math.PI / 2.05} target={[0, 0.5, 0]} makeDefault />
+      <OrbitControls
+        enableDamping
+        dampingFactor={0.12}
+        rotateSpeed={1.1}
+        zoomSpeed={1}
+        panSpeed={0.8}
+        enablePan
+        minDistance={2.5}
+        maxDistance={20}
+        minPolarAngle={Math.PI / 6}
+        maxPolarAngle={Math.PI / 2.05}
+        target={[0, 0.5, 0]}
+        makeDefault
+      />
+
+      {/* ✅ Model */}
       {scene && <primitive object={scene} />}
+
+      {/* ✅ Postprocessing */}
+      <EffectComposer multisampling={0}> 
+        <FXAA />
+        <Bloom
+          intensity={0.4}     // glow strength
+          luminanceThreshold={0.85}
+          luminanceSmoothing={0.3}
+          blendFunction={BlendFunction.SCREEN}
+        />
+      </EffectComposer>
     </Suspense>
   );
 });
