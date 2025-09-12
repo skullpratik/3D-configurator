@@ -24,6 +24,40 @@ export const Experience = forwardRef(({
   const { scene: threeScene, camera, gl } = useThree();
   const { scene } = useGLTF("/models/Visicooler.glb");
 
+  // Center and scale main Visicooler mesh for visibility
+  useEffect(() => {
+    if (scene) {
+      // Find the main mesh by name
+      const mainMesh = scene.getObjectByName("Visicooler");
+      if (mainMesh) {
+        // Compute bounding box
+        const box = new THREE.Box3().setFromObject(mainMesh);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        mainMesh.position.x -= center.x;
+        mainMesh.position.y -= center.y;
+        mainMesh.position.z -= center.z;
+        // Scale up if very small
+        const maxDim = Math.max(size.x, size.y, size.z);
+        if (maxDim < 0.5) {
+          const scaleUp = 1.5 / maxDim;
+          mainMesh.scale.setScalar(scaleUp);
+          console.log('Scaling main Visicooler mesh by', scaleUp);
+        }
+      }
+    }
+  }, [scene]);
+  useEffect(() => {
+    if (scene) {
+      console.log('Visicooler GLTF scene:', scene);
+      scene.traverse(child => {
+        if (child.isMesh) {
+          console.log('Mesh:', child.name, 'visible:', child.visible, 'position:', child.position, 'scale:', child.scale);
+        }
+      });
+    }
+  }, [scene]);
+
   // --- refs ---
   const doorRef = useRef();
   const glassRef = useRef();
@@ -52,6 +86,15 @@ export const Experience = forwardRef(({
 
   // Position ref for keyboard controls
   const positionRef = useRef({ x: 0.15, y: -1.1, z: -0.19 });
+
+  // Cleanup effect when component unmounts
+  useEffect(() => {
+    return () => {
+      if (threeScene) {
+        threeScene.background = null;
+      }
+    };
+  }, [threeScene]);
 
   // --- helpers ---
   const setMapOnMesh = (mesh, tex) => {
@@ -174,8 +217,9 @@ export const Experience = forwardRef(({
     pointLightRef.current.visible = ledVisible;
     ambientLightRef.current.visible = ledVisible;
 
+    // Keep background transparent for better lighting
     if (threeScene) {
-      threeScene.background = ledVisible ? new THREE.Color(0x666666) : null;
+      threeScene.background = null;
     }
 
     if (canopyMeshRef.current) {
@@ -220,7 +264,10 @@ export const Experience = forwardRef(({
           return;
       }
 
-      scene.position.set(positionRef.current.x, positionRef.current.y, positionRef.current.z);
+      // Trigger re-render to update position
+      if (scene) {
+        scene.position.set(positionRef.current.x, positionRef.current.y, positionRef.current.z);
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -480,12 +527,15 @@ export const Experience = forwardRef(({
   };
 
   // --- scene setup ---
-  // --- scene setup ---
 useEffect(() => {
   if (!scene || !threeScene) return;
 
   scene.scale.set(2.5, 2.5, 2.5);
-  scene.position.set(positionRef.current.x, positionRef.current.y, positionRef.current.z);
+  // Only set initial position on first setup
+  if (!scene.userData.positionInitialized) {
+    scene.position.set(positionRef.current.x, positionRef.current.y, positionRef.current.z);
+    scene.userData.positionInitialized = true;
+  }
   scene.traverse(c => { if (c.isMesh && c.name !== "Door") { c.castShadow = true; c.receiveShadow = true; } });
 
   // Apply default canopy texture on load
@@ -510,12 +560,33 @@ useEffect(() => {
   // --- cleanup ---
   useEffect(() => {
     return () => {
+      // Clean up textures
       if (canopyTextureRef.current) canopyTextureRef.current.dispose();
       if (sidePanel1TextureRef.current) sidePanel1TextureRef.current.dispose();
       if (sidePanel2TextureRef.current) sidePanel2TextureRef.current.dispose();
       if (louverTextureRef.current) louverTextureRef.current.dispose();
+      
+      // Clean up scene if it exists
+      if (scene && threeScene) {
+        scene.traverse((child) => {
+          if (child.isMesh) {
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach(mat => mat.dispose());
+              } else {
+                child.material.dispose();
+              }
+            }
+          }
+        });
+        // Remove the scene object from the Three.js scene
+        if (scene.parent) {
+          scene.parent.remove(scene);
+        }
+      }
     };
-  }, []);
+  }, [scene, threeScene]);
 
   // --- expose functions ---
   useImperativeHandle(ref, () => ({
@@ -536,15 +607,14 @@ useEffect(() => {
   }));
 
   return (
-    <Suspense fallback={null}>
-      <Environment files="photo_studio_01_1k.hdr" background={false} intensity={1.2} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.3, 0]} receiveShadow>
-        <planeGeometry args={[1000, 1000]} />
-        <meshStandardMaterial color="#d8d8d8" roughness={0} metalness={0} visible={false} />
-      </mesh>
-      <ContactShadows position={[0, -1.42, 0]} opacity={1.5} scale={15} blur={2.5} far={10} />
-      <OrbitControls enableDamping dampingFactor={0.12} rotateSpeed={1.1} zoomSpeed={1} panSpeed={0.8} enablePan minDistance={2.5} maxDistance={20} minPolarAngle={Math.PI / 6} maxPolarAngle={Math.PI / 2.05} target={[0, 0.5, 0]} makeDefault />
-      {scene && <primitive object={scene} />}
-    </Suspense>
+  <Suspense fallback={<div style={{color:'red'}}>Visicooler model failed to load</div>}>
+    <Environment files="photo_studio_01_1k.hdr" background={false} intensity={2.0} />
+    <ambientLight intensity={0.6} />
+    <directionalLight position={[5, 5, 5]} intensity={1.5} castShadow />
+    {/* <ContactShadows position={[0, -1.42, 0]} opacity={0.4} scale={15} blur={2.5} far={10} /> */}
+    <OrbitControls enableDamping dampingFactor={0.12} rotateSpeed={1.1} zoomSpeed={1} panSpeed={0.8} enablePan minDistance={2.5} maxDistance={20} minPolarAngle={Math.PI / 6} maxPolarAngle={Math.PI / 2.05} target={[0, 0.5, 0]} makeDefault />
+    {/* Render main mesh if found, else render all visible top-level meshes for debugging */}
+   {scene && <primitive object={scene} />}
+  </Suspense>
   );
 });

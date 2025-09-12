@@ -69,11 +69,11 @@ const positionConfigs = {
 };
 
 // Preload GLTF
-useGLTF.preload("/models/UnderCounterAll3Models.glb");
+  useGLTF.preload("/models/undercounter.glb");
 
 export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr", doorType = "solid", isReflective }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/UnderCounterAll3Models.glb");
+  const { scene } = useGLTF("/models/undercounter.glb");
   
   const [position, setPosition] = useState(new THREE.Vector3(0.4, -0.836, 0));
   const moveSpeed = 0.05;
@@ -345,13 +345,7 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
   
      
   
-      <ContactShadows
-        position={[-0.01, -0.9, 0]}
-        opacity={0.6}
-        scale={6}
-        blur={2.5}
-        far={45}
-      />
+      {/* ContactShadows removed to eliminate unwanted shadow */}
   
       <OrbitControls
         enableDamping
@@ -373,12 +367,7 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
       {/* 🔥 Postprocessing Effects */}
       <EffectComposer multisampling={8}>
         <SMAA /> {/* Anti-aliasing */}
-        <Bloom
-          intensity={0.4}   // glow intensity
-          luminanceThreshold={0.8}
-          luminanceSmoothing={0.2}
-          blendFunction={BlendFunction.SCREEN}
-        />
+        
         <ToneMapping adaptive={true} />
       </EffectComposer>
     </Suspense>

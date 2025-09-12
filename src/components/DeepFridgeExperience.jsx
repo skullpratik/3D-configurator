@@ -146,7 +146,7 @@ export const Experience = forwardRef(function DeepFridgeExperience(
   return (
     <Suspense fallback={null}>
       <Environment files="photo_studio_01_1k.hdr" background={false} intensity={1.2} />
-      <ContactShadows position={[0, -1.1, 0]} opacity={0.8} scale={15} blur={2.5} far={10} />
+ 
       <OrbitControls
         enableDamping
         dampingFactor={0.12}

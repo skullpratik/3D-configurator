@@ -97,20 +97,44 @@ function CanvasContent({
   louverTextureUrl,
   isReflective,
 }) {
+  const { scene } = useThree();
+
+  // Scene cleanup only on unmount
+  useEffect(() => {
+    return () => {
+      while (scene.children.length > 0) {
+        const obj = scene.children[0];
+        scene.remove(obj);
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) {
+            obj.material.forEach(mat => mat.dispose());
+          } else {
+            obj.material.dispose();
+          }
+        }
+      }
+      scene.background = null;
+    };
+  }, [scene]);
+
   return (
     <>
+      {console.log('Rendering modelType:', modelType)}
       {modelType === "undercounter" && (
         <UnderCounterExperience
+          key="undercounter"
           ref={underCounterRef}
           metalness={materialProps.metalness}
           roughness={materialProps.roughness}
           lightSettings={lightSettings}
           doorType={doorType}
-          isReflective={isReflective} // New prop
+          isReflective={isReflective}
         />
       )}
       {modelType === "visicooler" && (
         <VisicoolerExperience
+          key="visicooler"
           ref={visiCoolerRef}
           metalness={materialProps.metalness}
           roughness={materialProps.roughness}
@@ -130,6 +154,7 @@ function CanvasContent({
       )}
       {modelType === "deepfridge" && (
         <DeepFridgeExperience
+          key="deepfridge"
           ref={deepFridgeRef}
           metalness={materialProps.metalness}
           roughness={materialProps.roughness}
