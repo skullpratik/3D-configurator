@@ -146,7 +146,10 @@ export const Experience = forwardRef(function DeepFridgeExperience(
   return (
     <Suspense fallback={null}>
       <Environment files="photo_studio_01_1k.hdr" background={false} intensity={1.2} />
- 
+      <ContactShadows
+        position={[0, -1.16, 0]}
+        opacity={0.6}
+      />
       <OrbitControls
         enableDamping
         dampingFactor={0.12}
@@ -169,7 +172,7 @@ export const Experience = forwardRef(function DeepFridgeExperience(
       <EffectComposer multisampling={0}> 
         <FXAA />
         <Bloom
-          intensity={0.4}     // glow strength
+          intensity={0.1}     // glow strength
           luminanceThreshold={0.85}
           luminanceSmoothing={0.3}
           blendFunction={BlendFunction.SCREEN}

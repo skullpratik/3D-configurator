@@ -361,7 +361,14 @@ export const Experience = forwardRef(({ lighting = "photo_studio_01_4k_11zon.hdr
         target={[0, 0.5, 0]}
         makeDefault
       />
-  
+  <ContactShadows
+          position={[0, -1, 0]}
+          opacity={0.9}
+          scale={15}
+          far={25}
+          
+          resolution={512}
+        />
       {scene && <primitive object={scene} />}
   
       {/* 🔥 Postprocessing Effects */}

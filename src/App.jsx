@@ -97,27 +97,6 @@ function CanvasContent({
   louverTextureUrl,
   isReflective,
 }) {
-  const { scene } = useThree();
-
-  // Scene cleanup only on unmount
-  useEffect(() => {
-    return () => {
-      while (scene.children.length > 0) {
-        const obj = scene.children[0];
-        scene.remove(obj);
-        if (obj.geometry) obj.geometry.dispose();
-        if (obj.material) {
-          if (Array.isArray(obj.material)) {
-            obj.material.forEach(mat => mat.dispose());
-          } else {
-            obj.material.dispose();
-          }
-        }
-      }
-      scene.background = null;
-    };
-  }, [scene]);
-
   return (
     <>
       {console.log('Rendering modelType:', modelType)}

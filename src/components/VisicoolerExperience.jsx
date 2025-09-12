@@ -24,40 +24,6 @@ export const Experience = forwardRef(({
   const { scene: threeScene, camera, gl } = useThree();
   const { scene } = useGLTF("/models/Visicooler.glb");
 
-  // Center and scale main Visicooler mesh for visibility
-  useEffect(() => {
-    if (scene) {
-      // Find the main mesh by name
-      const mainMesh = scene.getObjectByName("Visicooler");
-      if (mainMesh) {
-        // Compute bounding box
-        const box = new THREE.Box3().setFromObject(mainMesh);
-        const size = box.getSize(new THREE.Vector3());
-        const center = box.getCenter(new THREE.Vector3());
-        mainMesh.position.x -= center.x;
-        mainMesh.position.y -= center.y;
-        mainMesh.position.z -= center.z;
-        // Scale up if very small
-        const maxDim = Math.max(size.x, size.y, size.z);
-        if (maxDim < 0.5) {
-          const scaleUp = 1.5 / maxDim;
-          mainMesh.scale.setScalar(scaleUp);
-          console.log('Scaling main Visicooler mesh by', scaleUp);
-        }
-      }
-    }
-  }, [scene]);
-  useEffect(() => {
-    if (scene) {
-      console.log('Visicooler GLTF scene:', scene);
-      scene.traverse(child => {
-        if (child.isMesh) {
-          console.log('Mesh:', child.name, 'visible:', child.visible, 'position:', child.position, 'scale:', child.scale);
-        }
-      });
-    }
-  }, [scene]);
-
   // --- refs ---
   const doorRef = useRef();
   const glassRef = useRef();
@@ -613,8 +579,9 @@ useEffect(() => {
     <directionalLight position={[5, 5, 5]} intensity={1.5} castShadow />
     {/* <ContactShadows position={[0, -1.42, 0]} opacity={0.4} scale={15} blur={2.5} far={10} /> */}
     <OrbitControls enableDamping dampingFactor={0.12} rotateSpeed={1.1} zoomSpeed={1} panSpeed={0.8} enablePan minDistance={2.5} maxDistance={20} minPolarAngle={Math.PI / 6} maxPolarAngle={Math.PI / 2.05} target={[0, 0.5, 0]} makeDefault />
-    {/* Render main mesh if found, else render all visible top-level meshes for debugging */}
-   {scene && <primitive object={scene} />}
+    
+    {/* ✅ Fixed: Render the entire scene directly */}
+    {scene && <primitive object={scene} />}
   </Suspense>
   );
 });
