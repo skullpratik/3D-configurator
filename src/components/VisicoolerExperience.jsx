@@ -22,7 +22,10 @@ export const Experience = forwardRef(({
   onAssetLoaded
 }, ref) => {
   const { scene: threeScene, camera, gl } = useThree();
-  const { scene } = useGLTF("/models/Visicooler.glb");
+  const { scene: originalScene } = useGLTF("/models/Visicooler.glb");
+
+  // Always clone the scene to avoid reuse issues
+  const [scene] = React.useState(() => originalScene.clone(true));
 
   // --- refs ---
   const doorRef = useRef();
@@ -575,12 +578,18 @@ useEffect(() => {
   return (
   <Suspense fallback={<div style={{color:'red'}}>Visicooler model failed to load</div>}>
     <Environment files="photo_studio_01_1k.hdr" background={false} intensity={2.0} />
-    <ambientLight intensity={0.6} />
-    <directionalLight position={[5, 5, 5]} intensity={1.5} castShadow />
+    <ContactShadows
+              position={[0, -1.47, 0]}
+              opacity={0.9}
+              scale={15}
+              far={25}
+              
+              resolution={512}
+            />
     {/* <ContactShadows position={[0, -1.42, 0]} opacity={0.4} scale={15} blur={2.5} far={10} /> */}
     <OrbitControls enableDamping dampingFactor={0.12} rotateSpeed={1.1} zoomSpeed={1} panSpeed={0.8} enablePan minDistance={2.5} maxDistance={20} minPolarAngle={Math.PI / 6} maxPolarAngle={Math.PI / 2.05} target={[0, 0.5, 0]} makeDefault />
     
-    {/* ✅ Fixed: Render the entire scene directly */}
+    {/* ✅ Fixed: Render the entire scene directly, always using a fresh clone */}
     {scene && <primitive object={scene} />}
   </Suspense>
   );
